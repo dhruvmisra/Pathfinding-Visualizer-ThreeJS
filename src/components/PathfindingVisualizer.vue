@@ -68,7 +68,6 @@ export default {
 			if (this.visualizerState == "running") return;
 			if (!node.isWall) {
 				if (node.isStart || node.isFinish) return;
-				// tweenToColor(node, this.ground.geometry, this.colors.wall);
 				node.isWall = true;
 			} else {
 				node.isWall = false;

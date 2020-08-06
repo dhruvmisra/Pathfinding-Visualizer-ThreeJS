@@ -8,7 +8,7 @@ export function getAllNodes(grid) {
   return nodes;
 }
 
-export function tweenToColor(node, geometry, color, duration = 300, chain) {
+export async function tweenToColor(node, geometry, color, duration = 300, chain) {
 	new TWEEN.Tween(node.faces[1].color)
 		.to(color, duration)
 		.onUpdate(() => {
