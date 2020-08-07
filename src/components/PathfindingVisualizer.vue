@@ -29,6 +29,7 @@ import TWEEN from "@tweenjs/tween.js";
 
 import { getAllNodes, tweenToColor } from "./algorithms/helpers.js";
 import { dijkstra, getNodesInShortestPathOrder } from "./algorithms/dijkstra.js";
+import { weightedSearchAlgorithm } from "./algorithms/weightedSearchAlgorithm.js";
 
 export default {
 	components: {
@@ -66,24 +67,28 @@ export default {
 		onClick(node) {
 			let vm = this;
 			if (this.visualizerState == "running") return;
-			if (!node.isWall) {
-				if (node.isStart || node.isFinish) return;
-				node.isWall = true;
+			if (node.status != "wall") {
+				if (node.status == "start" || node.status == "finish") return;
+				node.status = "wall";
 			} else {
-				node.isWall = false;
+				node.status = "default";
 			}
 		},
 
 		clearGrid() {
 			for (let i = 0; i < this.rows; i++) {
 				for (let j = 0; j < this.cols; j++) {
-					// let newRow = this.grid[i].slice(0);
-					// newRow[j].isVisited = false;
-					// newRow[j].distance = Infinity;
-					// newRow[j].previousNode = null;
-					// this.$set(this.grid, i, newRow);
-					this.$set(this.grid[i][j], "isVisited", false);
+					let status = "default";
+					if(i == this.start.row && j == this.start.col) {
+						status = "start";
+					} else if(i == this.finish.row && j == this.finish.col) {
+						status = "finish";
+					}
+					if(this.grid[i][j].status != "wall") {
+						this.$set(this.grid[i][j], "status", status);
+					}
 					this.$set(this.grid[i][j], "distance", Infinity);
+					this.$set(this.grid[i][j], "direction", null);
 					this.$set(this.grid[i][j], "previousNode", null);
 				}
 			}
@@ -110,9 +115,11 @@ export default {
 			this.visualizerState = "running";
 			const startNode = this.grid[this.start.row][this.start.col];
 			const finishNode = this.grid[this.finish.row][this.finish.col];
-			const visitedNodesInOrder = dijkstra(this.grid, startNode, finishNode);
+			let nodesToAnimate = [];
+			const success = weightedSearchAlgorithm(this.grid, startNode, finishNode, nodesToAnimate, "dijkstra", null);
+			console.log("success:", success);
 			const nodesInShortestPathOrder = getNodesInShortestPathOrder(finishNode);
-			this.animateDijkstra(visitedNodesInOrder, nodesInShortestPathOrder, duration);
+			this.animateDijkstra(nodesToAnimate, nodesInShortestPathOrder, duration);
 		},
 		animateDijkstra(visitedNodesInOrder, nodesInShortestPathOrder, duration) {
 			for (let i = 0; i <= visitedNodesInOrder.length; i++) {

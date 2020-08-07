@@ -87,7 +87,7 @@ export default {
 
 			//Scene
 			this.scene = new THREE.Scene();
-			this.scene.background = new THREE.Color(0xe0faff);
+			this.scene.background = new THREE.Color(0x92B3D4);
 			this.scene.fog = new THREE.Fog(this.scene.background, 1, 750);
 			// this.scene.background = new THREE.Color().setHSL( 0.6, 0, 1 );
 
@@ -300,22 +300,30 @@ export default {
 			faceIndex = faceIndex % 2 == 0 ? faceIndex + 1 : faceIndex - 1;
 			faces[2] = this.ground.geometry.faces[faceIndex];
 
+			let status = "default";
+			if(row == this.start.row && col == this.start.col) {
+				status = "start";
+			} else if(row == this.finish.row && col == this.finish.col) {
+				status = "finish";
+			}
+
 			// Node info
 			let node = {
-				faces: faces,
 				row: row,
 				col: col,
-				isStart: row === this.start.row && col === this.start.col,
-				isFinish: row === this.finish.row && col === this.finish.col,
+				faces: faces,
+				status: status,
 				distance: Infinity,
-				isVisited: false,
-				isWall: false,
+				direction: null,
+				totalDistance: null,
+				heuristicDistance: null,
+				weight: 0,
 				previousNode: null,
 			};
 
-			if (row === this.start.row && col === this.start.col) {
+			if (status == "start") {
 				tweenToColor(node, this.ground.geometry, this.colors.start);
-			} else if (row === this.finish.row && col === this.finish.col) {
+			} else if (status == "finish") {
 				tweenToColor(node, this.ground.geometry, this.colors.finish);
 			}
 
@@ -332,26 +340,21 @@ export default {
 		updateNode(node) {
 			let id = node.row * this.cols + node.col;
 
-			if (node.isWall) {
-				console.log("WALL");
+			if (node.status == "wall") {
 				if (this.walls[id] == null) {
-					console.log("Adding wall");
 					this.addWall(node);
 				} else if (!this.walls[id].visible) {
-					console.log("Showing wall");
 					this.showWall(this.walls[id]);
 				}
 				// tweenToColor(node, this.ground.geometry, this.colors.wall);
-			} else if (node.isStart) {
-				console.log("START");
+			} else if (node.status == "start") {
 				tweenToColor(node, this.ground.geometry, this.colors.start);
-			} else if (node.isFinish) {
-				console.log("FINISH");
+			} else if (node.status == "finish") {
 				tweenToColor(node, this.ground.geometry, this.colors.finish);
+			} else if (node.status == "visited") {
+				tweenToColor(node, this.ground.geometry, this.colors.visited);
 			} else {
-				console.log("DEFAULT");
 				if (this.walls[id] != null && this.walls[id].visible) {
-					console.log("Hiding wall");
 					this.hideWall(this.walls[id]);
 				}
 				tweenToColor(node, this.ground.geometry, this.colors.default);
