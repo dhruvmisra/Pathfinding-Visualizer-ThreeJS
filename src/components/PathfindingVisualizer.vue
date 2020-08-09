@@ -11,13 +11,20 @@
 			:visualizerState="visualizerState"
 			:colors="colors"
 			:controlType="controlType"
+			:setStartFinish="setStartFinish"
 			@clickEvent="onClick"
 			@groundInitialized="ground = $event"
 		/>
-		<button class="btn btn-visualize" @click.stop="visualizeDijkstra(10)">
-			Visualize Dijkstra's {{ visualizerState }}
-		</button>
-		<button class="btn btn-clear" @click.stop="clearGrid">Clear</button>
+		<div class="header py-1">
+			<select class="form-select  m-1" id="algorithms" v-model="selectedAlgorithm">
+				<option :value="algo" v-for="algo in algorithms" :key="algo">{{ algo }}</option>
+			</select>
+			<button class="btn btn-primary m-1" @click="visualizeDijkstra(10)">
+				Visualize {{ selectedAlgorithm }}!
+			</button>
+			<button class="btn btn-danger m-1" @click="clearGrid">Clear</button>
+			<button class="btn btn-info m-1" @click="setStartFinish = !setStartFinish">Change Start/Finish</button>
+		</div>
 	</div>
 </template>
 
@@ -37,6 +44,8 @@ export default {
 	},
 	data: () => ({
 		visualizerState: "clear", // clear/running/finished
+		algorithms: ["Dijkstra's"],
+		selectedAlgorithm: "Dijkstra's",
 		nodeDimensions: {
 			height: 5,
 			width: 5,
@@ -45,7 +54,7 @@ export default {
 		cols: 30,
 		grid: [],
 		ground: null,
-		controlType: "Orbit",
+		controlType: "Orbit", // Orbit/PointerLock
 		start: {
 			row: 3,
 			col: 5,
@@ -54,6 +63,7 @@ export default {
 			row: 10,
 			col: 15,
 		},
+		setStartFinish: false,
 		colors: {
 			default: { r: 1, g: 1, b: 1 },
 			start: { r: 0, g: 1, b: 0 },
@@ -88,6 +98,8 @@ export default {
 						this.$set(this.grid[i][j], "status", status);
 					}
 					this.$set(this.grid[i][j], "distance", Infinity);
+					this.$set(this.grid[i][j], "totalDistance", Infinity);
+					this.$set(this.grid[i][j], "heuristicDistance", null);
 					this.$set(this.grid[i][j], "direction", null);
 					this.$set(this.grid[i][j], "previousNode", null);
 				}
@@ -116,7 +128,7 @@ export default {
 			const startNode = this.grid[this.start.row][this.start.col];
 			const finishNode = this.grid[this.finish.row][this.finish.col];
 			let nodesToAnimate = [];
-			const success = weightedSearchAlgorithm(this.grid, startNode, finishNode, nodesToAnimate, "dijkstra", null);
+			const success = weightedSearchAlgorithm(this.grid, startNode, finishNode, nodesToAnimate, "astar", "poweredManhattanDistance");
 			console.log("success:", success);
 			const nodesInShortestPathOrder = getNodesInShortestPathOrder(finishNode);
 			this.animateDijkstra(nodesToAnimate, nodesInShortestPathOrder, duration);
@@ -165,28 +177,29 @@ export default {
 	width: 100vw;
 	height: 100vh;
 
-	.btn {
+	.header {
 		position: absolute;
-		padding: 10px 20px;
-		border-radius: 5px;
-		border: none;
-		color: white;
-		font-weight: 600;
-		cursor: pointer;
+		top: 0;
+		left: 0;
+		width: 100%;
+		display: flex;
+		background: white;
+		opacity: 0.2;
+		transition: all 500ms ease-out;
 		&:hover {
-			filter: brightness(1.1);
+			opacity: 1;
 		}
 
-		&.btn-visualize {
-			background: blueviolet;
-			top: 10px;
-			right: 10px;
+		select {
+			width: fit-content;
 		}
-		&.btn-clear {
-			background: yellowgreen;
-			top: 60px;
-			right: 10px;
-		}
+	}
+
+	.btn-visualize {
+		background: blueviolet;
+	}
+	.btn-clear {
+		background: yellowgreen;
 	}
 }
 </style>

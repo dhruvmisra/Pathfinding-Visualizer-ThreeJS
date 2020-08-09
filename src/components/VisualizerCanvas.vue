@@ -21,6 +21,7 @@ export default {
 		"visualizerState",
 		"colors",
 		"controlType",
+		"setStartFinish"
 	],
 	data: () => ({
 		scene: null,
@@ -314,9 +315,9 @@ export default {
 				faces: faces,
 				status: status,
 				distance: Infinity,
-				direction: null,
-				totalDistance: null,
+				totalDistance: Infinity,
 				heuristicDistance: null,
+				direction: null,
 				weight: 0,
 				previousNode: null,
 			};
