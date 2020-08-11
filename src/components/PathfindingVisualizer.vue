@@ -11,23 +11,27 @@
 			:visualizerState="visualizerState"
 			:colors="colors"
 			:controlType="controlType"
-			:setStartFinish="setStartFinish"
+			:lockRotation="lockRotation"
 			@clickEvent="onClick"
 			@groundInitialized="ground = $event"
+			@updateEnds="updateEnds"
 		/>
-		<div class="header py-1">
-			<select class="form-select  m-1" id="algorithms" v-model="selectedAlgorithm">
-				<option :value="algo" v-for="algo in algorithms" :key="algo.algorithm">{{
-					algo.displayName
-				}}</option>
-			</select>
-			<button class="btn btn-primary m-1" @click="visualizeAlgorithm(15)">
-				Visualize {{ selectedAlgorithm.displayName }}!
-			</button>
-			<button class="btn btn-danger m-1" @click="clearPath">Clear Path</button>
-			<button class="btn btn-info m-1" @click="setStartFinish = !setStartFinish">
-				Change Start/Finish
-			</button>
+		<div class="header-container">
+			<div class="header py-1">
+				<select class="form-select  m-1" id="algorithms" v-model="selectedAlgorithm">
+					<option :value="algo" v-for="algo in algorithms" :key="algo.algorithm">{{
+						algo.displayName
+					}}</option>
+				</select>
+				<button class="btn btn-primary m-1" @click="visualizeAlgorithm(15)">
+					Visualize {{ selectedAlgorithm.displayName }}!
+				</button>
+				<button class="btn btn-danger m-1" @click="clearPath">Clear Path</button>
+				<button class="btn btn-danger m-1" @click="clearWalls">Clear Walls</button>
+				<button class="btn btn-info m-1" @click="lockRotation = !lockRotation">
+					Setup World
+				</button>
+			</div>
 		</div>
 	</div>
 </template>
@@ -88,7 +92,7 @@ export default {
 			row: 10,
 			col: 15,
 		},
-		setStartFinish: false,
+		lockRotation: false,
 		colors: {
 			default: { r: 1, g: 1, b: 1 },
 			start: { r: 0, g: 1, b: 0 },
@@ -107,6 +111,8 @@ export default {
 	},
 	created() {
 		this.selectedAlgorithm = this.algorithms[0];
+		this.start.gridId = this.start.row * this.cols + this.start.col;
+		this.finish.gridId = this.finish.row * this.cols + this.finish.col;
 	},
 	methods: {
 		onClick(node) {
@@ -117,6 +123,16 @@ export default {
 				node.status = "wall";
 			} else {
 				node.status = "default";
+			}
+		},
+
+		updateEnds(obj) {
+			if(obj.start) {
+				this.start = obj.start;
+				this.start.gridId = obj.start.row*this.cols + obj.start.col;
+			} else {
+				this.finish = obj.finish;
+				this.finish.gridId = obj.finish.row*this.cols + obj.finish.col;
 			}
 		},
 
@@ -238,7 +254,7 @@ export default {
 				setTimeout(() => {
 					const node = visitedNodesInOrder[i];
 					if (!node) return;
-					tweenToColor(node, this.ground.geometry, [{r: 0.592, g: 0.2, b: 0.921}, this.colors.visited], 300, { position: true });
+					tweenToColor(node, this.ground.geometry, [{r: 1.0, g: 0.321, b: 0.784}, this.colors.visited], 300, { position: true });
 				}, duration * i);
 			}
 		},
@@ -264,22 +280,28 @@ export default {
 	width: 100vw;
 	height: 100vh;
 
-	.header {
+	.header-container {
 		position: absolute;
 		top: 0;
 		left: 0;
 		width: 100%;
-		display: flex;
 		background: white;
 		opacity: 0.2;
+		overflow: auto;
 		transition: all 500ms ease-out;
 		&:hover {
 			opacity: 1;
 		}
 
-		select {
-			width: fit-content;
+		.header {
+			width: 100%;
+			display: flex;
+			
+			select {
+				width: fit-content;
+			}
 		}
+
 	}
 
 	.btn-visualize {
