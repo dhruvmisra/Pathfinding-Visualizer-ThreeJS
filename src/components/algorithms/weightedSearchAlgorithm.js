@@ -16,8 +16,10 @@ export function weightedSearchAlgorithm(grid, start, target, nodesToAnimate, nam
 		}
     if (currentNode.distance === Infinity) return false;
     nodesToAnimate.push(currentNode);
-    currentNode.status = "visited";
-    if (currentNode === target) return "success!";
+		currentNode.status = "visited";
+		// Ending condition
+		if (currentNode.id === target.id) return "success!";
+		// Updating neighbors
     if (name === "CLA" || name === "greedy" || name == "astar") {
       updateNeighbors(grid, currentNode, start, target, name, heuristic);
     } else if (name === "dijkstra") {

@@ -60,6 +60,8 @@ export default {
 		down: false,
 		moved: false,
 		currentEvent: null,
+		mouse: null,
+		intersectedNode: null
 	}),
 	computed: {
 		clickableObjects() {
@@ -77,6 +79,18 @@ export default {
 		controlType: function(newVal, oldVal) {
 			this.setControls();
 		},
+		setStartFinish: function(newVal, oldVal) {
+			if(newVal) {
+				this.controls.enableRotate = false;
+				console.log(this.camera.quaternion)
+				this.controls.target.set(0, 0, 0);
+				this.camera.position.set(0, this.cameraY-5, 0);
+				this.controls.update();
+			} else {
+				this.controls.enableRotate = true;
+				this.camera.position.set(0, this.cameraY, 0);
+			}
+		}
 	},
 	mounted() {
 		this.init();
@@ -88,7 +102,7 @@ export default {
 
 			//Scene
 			this.scene = new THREE.Scene();
-			this.scene.background = new THREE.Color(0x92B3D4);
+			this.scene.background = new THREE.Color(0xcff7ff);
 			this.scene.fog = new THREE.Fog(this.scene.background, 1, 750);
 			// this.scene.background = new THREE.Color().setHSL( 0.6, 0, 1 );
 
@@ -157,7 +171,6 @@ export default {
 			this.scene.add( dirLight );
 
 			dirLight.castShadow = true;
-
 			dirLight.shadow.mapSize.width = 2048;
 			dirLight.shadow.mapSize.height = 2048;
 
@@ -169,10 +182,10 @@ export default {
 
 			dirLight.shadow.camera.far = 350;
 
-			let dirLightHeper = new THREE.DirectionalLightHelper( dirLight, 10 );
-			this.scene.add( dirLightHeper );
-			var shadowHelper = new THREE.CameraHelper( dirLight.shadow.camera );
-			this.scene.add(shadowHelper)
+			// let dirLightHeper = new THREE.DirectionalLightHelper( dirLight, 10 );
+			// this.scene.add( dirLightHeper );
+			// var shadowHelper = new THREE.CameraHelper( dirLight.shadow.camera );
+			// this.scene.add(shadowHelper)
 
 			//Resize handler
 			window.addEventListener("resize", this.resizeHandler);
@@ -184,53 +197,89 @@ export default {
 			this.renderer.domElement.addEventListener("mouseleave", this.onMouseLeave, true);
 			this.renderer.domElement.addEventListener("touchend", this.onMouseup, true);
 
+			// Setting hover handler
+			this.mouse = new THREE.Vector2();
+
 			this.gameLoop();
 		},
 
 		gameLoop() {
 			requestAnimationFrame(this.gameLoop);
 			if (this.controlType == "PointerLock") {
-				this.raycaster.ray.origin.copy(this.controls.getObject().position);
-				this.raycaster.ray.origin.y -= this.cameraY;
-
-				var time = performance.now();
-				var delta = (time - this.pointerLock.prevTime) / 1000;
-				this.pointerLock.velocity.x -= this.pointerLock.velocity.x * 10.0 * delta;
-				this.pointerLock.velocity.z -= this.pointerLock.velocity.z * 10.0 * delta;
-
-				this.pointerLock.velocity.y -= 9.8 * 100.0 * delta; // 100.0 = mass
-
-				this.pointerLock.direction.z =
-					Number(this.pointerLock.moveForward) - Number(this.pointerLock.moveBackward);
-				this.pointerLock.direction.x =
-					Number(this.pointerLock.moveRight) - Number(this.pointerLock.moveLeft);
-				this.pointerLock.direction.normalize(); // this ensures consistent movements in all directions
-
-				if (this.pointerLock.moveForward || this.pointerLock.moveBackward)
-					this.pointerLock.velocity.z -= this.pointerLock.direction.z * 400.0 * delta;
-				if (this.pointerLock.moveLeft || this.pointerLock.moveRight)
-					this.pointerLock.velocity.x -= this.pointerLock.direction.x * 400.0 * delta;
-
-				// if (onObject === true) {
-				// 	this.pointerLock.velocity.y = Math.max(0, this.pointerLock.velocity.y);
-				// 	canJump = true;
-				// }
-
-				this.controls.moveRight(-this.pointerLock.velocity.x * delta);
-				this.controls.moveForward(-this.pointerLock.velocity.z * delta);
-
-				this.controls.getObject().position.y += this.pointerLock.velocity.y * delta; // new behavior
-
-				if (this.controls.getObject().position.y < this.cameraY) {
-					this.pointerLock.velocity.y = 0;
-					this.controls.getObject().position.y = this.cameraY;
-					this.pointerLock.canJump = true;
-				}
-
-				this.pointerLock.prevTime = time;
+				this.pointerLockLoop();
+			}
+			if(this.setStartFinish) {
+				this.hoverObjectLoop();
 			}
 			this.renderer.render(this.scene, this.camera);
 			TWEEN.update();
+		},
+
+		hoverObjectLoop() {
+			this.raycaster.setFromCamera(this.mouse, this.camera);
+			var intersects = this.raycaster.intersectObjects([this.ground]);
+			if (intersects.length > 0) {
+				var faceIndex = intersects[0].faceIndex;
+				let coords = this.faceIndexToCoordinates(faceIndex);
+
+				if (this.grid[coords.row][coords.col] != this.intersectedNode) {
+					// restore previous intersection object (if it exists) to its original color
+					if (this.intersectedNode) {
+						tweenToColor(this.intersectedNode, this.ground.geometry, [this.colors.default], 0)
+					}
+					
+					this.intersectedNode = this.grid[coords.row][coords.col];
+					this.intersectedNode.status = this.intersectedNode.status == "wall" ? "default" : "wall";
+					tweenToColor(this.grid[coords.row][coords.col], this.ground.geometry, [{ r: 1, g: 1, b: 0 }], 0)
+				}
+			} else {
+				// restore previous intersection object (if it exists) to its original color
+				if (this.intersectedNode) {
+					tweenToColor(this.intersectedNode, this.ground.geometry, [this.colors.default], 0)
+				}
+				this.intersectedNode = null;
+			}
+		},
+
+		pointerLockLoop() {
+			this.raycaster.ray.origin.copy(this.controls.getObject().position);
+			this.raycaster.ray.origin.y -= this.cameraY;
+
+			var time = performance.now();
+			var delta = (time - this.pointerLock.prevTime) / 1000;
+			this.pointerLock.velocity.x -= this.pointerLock.velocity.x * 10.0 * delta;
+			this.pointerLock.velocity.z -= this.pointerLock.velocity.z * 10.0 * delta;
+
+			this.pointerLock.velocity.y -= 9.8 * 100.0 * delta; // 100.0 = mass
+
+			this.pointerLock.direction.z =
+				Number(this.pointerLock.moveForward) - Number(this.pointerLock.moveBackward);
+			this.pointerLock.direction.x =
+				Number(this.pointerLock.moveRight) - Number(this.pointerLock.moveLeft);
+			this.pointerLock.direction.normalize(); // this ensures consistent movements in all directions
+
+			if (this.pointerLock.moveForward || this.pointerLock.moveBackward)
+				this.pointerLock.velocity.z -= this.pointerLock.direction.z * 400.0 * delta;
+			if (this.pointerLock.moveLeft || this.pointerLock.moveRight)
+				this.pointerLock.velocity.x -= this.pointerLock.direction.x * 400.0 * delta;
+
+			// if (onObject === true) {
+			// 	this.pointerLock.velocity.y = Math.max(0, this.pointerLock.velocity.y);
+			// 	canJump = true;
+			// }
+
+			this.controls.moveRight(-this.pointerLock.velocity.x * delta);
+			this.controls.moveForward(-this.pointerLock.velocity.z * delta);
+
+			this.controls.getObject().position.y += this.pointerLock.velocity.y * delta; // new behavior
+
+			if (this.controls.getObject().position.y < this.cameraY) {
+				this.pointerLock.velocity.y = 0;
+				this.controls.getObject().position.y = this.cameraY;
+				this.pointerLock.canJump = true;
+			}
+
+			this.pointerLock.prevTime = time;
 		},
 
 		setControls() {
@@ -310,6 +359,7 @@ export default {
 
 			// Node info
 			let node = {
+				id: row * this.cols + col,
 				row: row,
 				col: col,
 				faces: faces,
@@ -323,9 +373,9 @@ export default {
 			};
 
 			if (status == "start") {
-				tweenToColor(node, this.ground.geometry, this.colors.start);
+				tweenToColor(node, this.ground.geometry, [this.colors.start]);
 			} else if (status == "finish") {
-				tweenToColor(node, this.ground.geometry, this.colors.finish);
+				tweenToColor(node, this.ground.geometry, [this.colors.finish]);
 			}
 
 			return node;
@@ -339,32 +389,29 @@ export default {
 		},
 
 		updateNode(node) {
-			let id = node.row * this.cols + node.col;
-
 			if (node.status == "wall") {
-				if (this.walls[id] == null) {
+				if (this.walls[node.id] == null) {
 					this.addWall(node);
-				} else if (!this.walls[id].visible) {
-					this.showWall(this.walls[id]);
+				} else if (!this.walls[node.id].visible) {
+					this.showWall(this.walls[node.id]);
 				}
 				// tweenToColor(node, this.ground.geometry, this.colors.wall);
 			} else if (node.status == "start") {
-				tweenToColor(node, this.ground.geometry, this.colors.start);
+				tweenToColor(node, this.ground.geometry, [this.colors.start]);
 			} else if (node.status == "finish") {
-				tweenToColor(node, this.ground.geometry, this.colors.finish);
+				tweenToColor(node, this.ground.geometry, [this.colors.finish]);
 			} else if (node.status == "visited") {
-				tweenToColor(node, this.ground.geometry, this.colors.visited);
+				tweenToColor(node, this.ground.geometry, [this.colors.visited]);
 			} else {
-				if (this.walls[id] != null && this.walls[id].visible) {
-					this.hideWall(this.walls[id]);
+				if (this.walls[node.id] != null && this.walls[node.id].visible) {
+					this.hideWall(this.walls[node.id]);
 				}
-				tweenToColor(node, this.ground.geometry, this.colors.default);
+				tweenToColor(node, this.ground.geometry, [this.colors.default], 0);
 			}
 		},
 
 		addWall(node) {
 			let vm = this;
-			let id = node.row * this.cols + node.col;
 
 			let height = this.nodeDimensions.width * 2 + Math.random() * this.nodeDimensions.width * 3;
 			let wallGeomtery = new THREE.BoxBufferGeometry(
@@ -384,7 +431,7 @@ export default {
 				});
 				let wall = new THREE.Mesh(wallGeomtery, wallMaterial);
 				wall.name = "wall";
-				wall.wallId = id;
+				wall.wallId = node.id;
 				wall.castShadow = true;
 				wall.receiveShadow = true;
 				vm.scene.add(wall);
@@ -400,7 +447,7 @@ export default {
 					.to({ x: x, y: y, z: z }, 1000)
 					.easing(TWEEN.Easing.Bounce.Out)
 					.onComplete(() => {
-						vm.$set(vm.walls, id, wall);
+						vm.$set(vm.walls, node.id, wall);
 					})
 					.start();
 			}, undefined, function(error) {
@@ -422,9 +469,18 @@ export default {
 			this.moved = false;
 			this.currentEvent = event;
 		},
-		onMouseMove() {
+		onMouseMove(event) {
 			if (!this.down) return;
 			this.moved = true;
+			if(this.setStartFinish) {
+				if (event.touches && event.touches.length > 0) {
+					this.mouse.x = (event.touches[0].clientX / window.innerWidth) * 2 - 1;
+					this.mouse.y = -(event.touches[0].clientY / window.innerHeight) * 2 + 1;
+				} else {
+					this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+					this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+				}
+			}
 		},
 		onMouseLeave() {
 			if (this.moved) {
@@ -456,8 +512,6 @@ export default {
 			console.log("Moved");
 			// let vm = this;
 			// let mouse = new THREE.Vector2();
-			// this.raycaster.setFromCamera(mouse, this.camera);
-			// let intersects = this.raycaster.intersectObjects(this.grid); //array
 		},
 
 		clickHandler(event) {

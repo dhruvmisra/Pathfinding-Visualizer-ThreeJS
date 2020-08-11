@@ -17,13 +17,17 @@
 		/>
 		<div class="header py-1">
 			<select class="form-select  m-1" id="algorithms" v-model="selectedAlgorithm">
-				<option :value="algo" v-for="algo in algorithms" :key="algo">{{ algo }}</option>
+				<option :value="algo" v-for="algo in algorithms" :key="algo.algorithm">{{
+					algo.displayName
+				}}</option>
 			</select>
-			<button class="btn btn-primary m-1" @click="visualizeDijkstra(10)">
-				Visualize {{ selectedAlgorithm }}!
+			<button class="btn btn-primary m-1" @click="visualizeAlgorithm(15)">
+				Visualize {{ selectedAlgorithm.displayName }}!
 			</button>
-			<button class="btn btn-danger m-1" @click="clearGrid">Clear</button>
-			<button class="btn btn-info m-1" @click="setStartFinish = !setStartFinish">Change Start/Finish</button>
+			<button class="btn btn-danger m-1" @click="clearPath">Clear Path</button>
+			<button class="btn btn-info m-1" @click="setStartFinish = !setStartFinish">
+				Change Start/Finish
+			</button>
 		</div>
 	</div>
 </template>
@@ -34,9 +38,9 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import TWEEN from "@tweenjs/tween.js";
 
-import { getAllNodes, tweenToColor } from "./algorithms/helpers.js";
-import { dijkstra, getNodesInShortestPathOrder } from "./algorithms/dijkstra.js";
+import { getAllNodes, getNodesInShortestPathOrder, tweenToColor } from "./algorithms/helpers.js";
 import { weightedSearchAlgorithm } from "./algorithms/weightedSearchAlgorithm.js";
+import { unweightedSearchAlgorithm } from "./algorithms/unweightedSearchAlgorithm.js";
 
 export default {
 	components: {
@@ -44,8 +48,29 @@ export default {
 	},
 	data: () => ({
 		visualizerState: "clear", // clear/running/finished
-		algorithms: ["Dijkstra's"],
-		selectedAlgorithm: "Dijkstra's",
+		algorithms: [
+			{
+				algorithm: "dijkstra",
+				displayName: "Dijkstra's",
+				type: "weighted"
+			},
+			{
+				algorithm: "astar",
+				displayName: "A*",
+				type: "weighted"
+			},
+			{
+				algorithm: "bfs",
+				displayName: "Breadth-first Search",
+				type: "unweighted"
+			},
+			{
+				algorithm: "dfs",
+				displayName: "Depth-first Search",
+				type: "unweighted"
+			},
+		],
+		selectedAlgorithm: null,
 		nodeDimensions: {
 			height: 5,
 			width: 5,
@@ -73,10 +98,20 @@ export default {
 			path: { r: 1, g: 1, b: 0 },
 		},
 	}),
+	watch: {
+		selectedAlgorithm: function(newVal, oldVal) {
+			if(newVal.type == "unweighted") {
+				this.clearWalls();
+			}
+		}
+	},
+	created() {
+		this.selectedAlgorithm = this.algorithms[0];
+	},
 	methods: {
 		onClick(node) {
 			let vm = this;
-			if (this.visualizerState == "running") return;
+			if (this.visualizerState == "running" || this.selectedAlgorithm.type == "unweighted") return;
 			if (node.status != "wall") {
 				if (node.status == "start" || node.status == "finish") return;
 				node.status = "wall";
@@ -85,16 +120,27 @@ export default {
 			}
 		},
 
-		clearGrid() {
+		clearWalls() {
 			for (let i = 0; i < this.rows; i++) {
 				for (let j = 0; j < this.cols; j++) {
 					let status = "default";
-					if(i == this.start.row && j == this.start.col) {
+					if (this.grid[i][j].status == "wall") {
+						this.$set(this.grid[i][j], "status", status);
+					}
+				}
+			}
+		},
+
+		clearPath() {
+			for (let i = 0; i < this.rows; i++) {
+				for (let j = 0; j < this.cols; j++) {
+					let status = "default";
+					if (i == this.start.row && j == this.start.col) {
 						status = "start";
-					} else if(i == this.finish.row && j == this.finish.col) {
+					} else if (i == this.finish.row && j == this.finish.col) {
 						status = "finish";
 					}
-					if(this.grid[i][j].status != "wall") {
+					if (this.grid[i][j].status != "wall") {
 						this.$set(this.grid[i][j], "status", status);
 					}
 					this.$set(this.grid[i][j], "distance", Infinity);
@@ -107,33 +153,73 @@ export default {
 			this.visualizerState = "clear";
 		},
 
-		visualizeDijkstra(duration) {
-			this.clearGrid();
-			// Camera move
-			// this.$refs.visualizer.controls.enabled = false;
-			// console.log(JSON.parse(JSON.stringify(this.$refs.visualizer.camera.rotation)));
-			// console.log(this.$refs.visualizer.controls)
+		moveCamera() {
+			this.$refs.visualizer.controls.enabled = false;
+			console.log(JSON.parse(JSON.stringify(this.$refs.visualizer.camera.quaternion)));
+			let startQuaternion = this.$refs.visualizer.camera.quaternion.clone();
+			// let endQuaternion = new THREE.Quaternion().set(-0.4247082002778669, -0.33985114297998736, -0.17591989660616114, 0.8204732385702832);
+			let endQuaternion = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3( -1, 1, 1 ), Math.PI/10);
+			let time = {t: 0};
+			new TWEEN.Tween(time)
+				.to({t: 1}, 3000)
+				// .easing(TWEEN.Easing.Quadratic.InOut)
+				.onUpdate(() => {
+					THREE.Quaternion.slerp(startQuaternion, endQuaternion, this.$refs.visualizer.camera.quaternion, time.t);
+				})
+				.onComplete(() => {
+					// this.$refs.visualizer.controls.enabled = true;
+					// this.$refs.visualizer.controls.update();
+				})
+				.start();
 			// new TWEEN.Tween(this.$refs.visualizer.camera)
-			// 	.to({ position: { x: -100, y: 200, z: 100 }}, 10000)
+			// 	.to({ position: { x: -100, y: 200, z: 100 }}, 1000)
 			// 	.onUpdate(() => {
 			// 		this.$refs.visualizer.controls.update();
 			// 	})
 			// 	.onComplete(() => {
-			// 		console.log(this.$refs.visualizer.camera.rotation)
+			// 		console.log(this.$refs.visualizer.camera.quaternion)
+			// 		this.$refs.visualizer.controls.enabled = true;
 			// 	})
 			// 	.start();
-			// Camera move end
-
-			this.visualizerState = "running";
-			const startNode = this.grid[this.start.row][this.start.col];
-			const finishNode = this.grid[this.finish.row][this.finish.col];
-			let nodesToAnimate = [];
-			const success = weightedSearchAlgorithm(this.grid, startNode, finishNode, nodesToAnimate, "astar", "poweredManhattanDistance");
-			console.log("success:", success);
-			const nodesInShortestPathOrder = getNodesInShortestPathOrder(finishNode);
-			this.animateDijkstra(nodesToAnimate, nodesInShortestPathOrder, duration);
 		},
-		animateDijkstra(visitedNodesInOrder, nodesInShortestPathOrder, duration) {
+
+		visualizeAlgorithm(duration) {
+			this.clearPath();
+			// this.moveCamera();
+			this.$nextTick(() => {
+				this.visualizerState = "running";
+				const startNode = this.grid[this.start.row][this.start.col];
+				const finishNode = this.grid[this.finish.row][this.finish.col];
+				let nodesToAnimate = [];
+				let success;
+				if(this.selectedAlgorithm.type == "weighted") {
+					success = weightedSearchAlgorithm(
+						this.grid,
+						startNode,
+						finishNode,
+						nodesToAnimate,
+						this.selectedAlgorithm.algorithm,
+						"poweredManhattanDistance"
+					);
+				} else {
+					this.clearWalls();
+					success = unweightedSearchAlgorithm(
+						this.grid,
+						startNode,
+						finishNode,
+						nodesToAnimate,
+						this.selectedAlgorithm.algorithm
+					);
+				}
+				console.log("success:", success);
+				const nodesInShortestPathOrder = getNodesInShortestPathOrder(finishNode);
+				this.$nextTick(() => {
+					this.animateAlgorithm(nodesToAnimate, nodesInShortestPathOrder, duration);
+				});
+			});
+		},
+
+		animateAlgorithm(visitedNodesInOrder, nodesInShortestPathOrder, duration) {
 			for (let i = 0; i <= visitedNodesInOrder.length; i++) {
 				if (i === visitedNodesInOrder.length) {
 					setTimeout(() => {
@@ -152,16 +238,17 @@ export default {
 				setTimeout(() => {
 					const node = visitedNodesInOrder[i];
 					if (!node) return;
-					tweenToColor(node, this.ground.geometry, this.colors.visited);
+					tweenToColor(node, this.ground.geometry, [{r: 0.592, g: 0.2, b: 0.921}, this.colors.visited], 300, { position: true });
 				}, duration * i);
 			}
 		},
+
 		animateShortestPath(nodesInShortestPathOrder, duration) {
 			let vm = this;
 			for (let i = 0; i < nodesInShortestPathOrder.length; i++) {
 				setTimeout(() => {
 					const node = nodesInShortestPathOrder[i];
-					tweenToColor(node, this.ground.geometry, this.colors.path);
+					tweenToColor(node, this.ground.geometry, [this.colors.path], undefined, { position: true });
 					if (i == nodesInShortestPathOrder.length - 1) {
 						vm.visualizerState = "finished";
 					}
