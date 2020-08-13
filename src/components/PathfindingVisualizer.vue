@@ -80,7 +80,7 @@
 		>
 			<img src="@/assets/icons/street-view.svg" alt="" v-if="controlType == 'Orbit'" />
 			<img src="@/assets/icons/perspective.svg" alt="" v-else />
-			<span>{{ controlType == "Orbit" ? "Third-person" : "Perspective" }}</span>
+			<span>{{ controlType == "Orbit" ? "First-person" : "Perspective" }}</span>
 		</button>
 	</div>
 </template>
