@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="50.4" height="51.5" viewBox="0 0 50.4 51.5">
+  <g id="clear-wall" transform="translate(-224.6 -70.5)">
+    <rect id="Rectangle_1" data-name="Rectangle 1" width="50" height="50" transform="translate(225 71)" fill="rgba(255,255,255,0)"/>
+    <g id="cross" transform="translate(221.725 67.625)">
+      <path id="Path_1" data-name="Path 1" d="M27.687,25.462l-5.194-5.194,5.194-5.194a1.575,1.575,0,0,0-2.227-2.227L20.266,18.04l-5.194-5.194a1.575,1.575,0,0,0-2.227,2.227l5.194,5.194-5.194,5.194a1.523,1.523,0,0,0,0,2.227,1.565,1.565,0,0,0,2.227,0L20.266,22.5l5.194,5.194a1.582,1.582,0,0,0,2.227,0A1.565,1.565,0,0,0,27.687,25.462Z" transform="translate(3.609 3.607)" fill="#fff" stroke="#fff" stroke-width="1"/>
+      <path id="Path_2" data-name="Path 2" d="M23.875,6.135a17.733,17.733,0,1,1-12.546,5.194A17.623,17.623,0,0,1,23.875,6.135m0-2.76a20.5,20.5,0,1,0,20.5,20.5,20.5,20.5,0,0,0-20.5-20.5Z" fill="#fff" stroke="#fff" stroke-width="1"/>
+    </g>
+    <g id="Rectangle_2" data-name="Rectangle 2" transform="translate(247 102)" fill="#fff" stroke="#707070" stroke-linejoin="round" stroke-width="1">
+      <rect width="8" height="20" stroke="none"/>
+      <rect x="0.5" y="0.5" width="7" height="19" fill="none"/>
+    </g>
+    <g id="Rectangle_3" data-name="Rectangle 3" transform="translate(256 90)" fill="#fff" stroke="#707070" stroke-linejoin="round" stroke-width="1">
+      <rect width="8" height="32" stroke="none"/>
+      <rect x="0.5" y="0.5" width="7" height="31" fill="none"/>
+    </g>
+    <g id="Rectangle_4" data-name="Rectangle 4" transform="translate(265 97)" fill="#fff" stroke="#707070" stroke-linejoin="round" stroke-width="1">
+      <rect width="8" height="25" stroke="none"/>
+      <rect x="0.5" y="0.5" width="7" height="24" fill="none"/>
+    </g>
+  </g>
+</svg>
