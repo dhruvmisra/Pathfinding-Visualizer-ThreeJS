@@ -1,5 +1,5 @@
 <template>
-	<div class="pathfinding-visualizer">
+	<div class="pathfinding-visualizer" @click="clearFocus">
 		<VisualizerCanvas
 			ref="visualizer"
 			:nodeDimensions="nodeDimensions"
@@ -16,24 +16,60 @@
 			@groundInitialized="ground = $event"
 			@updateEnds="updateEnds"
 		/>
-		<div class="header-container" :class="{ setup: worldSetup }">
-			<div class="header py-1">
-				<select class="form-select  m-1" id="algorithms" v-model="selectedAlgorithm" :disabled="visualizerState == 'running' || worldSetup">
+		<div class="header-container">
+			<transition-group name="slide" mode="out-in" tag="div" class="header py-1">
+				<select
+					class="form-select  m-1"
+					id="algorithms"
+					v-model="selectedAlgorithm"
+					:disabled="visualizerState == 'running' || worldSetup"
+					key="algo-select"
+					v-if="!worldSetup"
+				>
 					<option :value="algo" v-for="algo in algorithms" :key="algo.algorithm">{{
 						algo.displayName
 					}}</option>
 				</select>
-				<button class="btn btn-primary m-1" @click="visualizeAlgorithm(15)" :disabled="visualizerState == 'running' || worldSetup">
-					Visualize {{ selectedAlgorithm.displayName }}!
+				<button
+					class="btn btn-primary m-1"
+					@click="visualizeAlgorithm(15)"
+					:disabled="visualizerState == 'running' || worldSetup"
+					key="visualize"
+					v-if="!worldSetup"
+				>
+					<img src="@/assets/icons/path.svg" alt="" />
+					<span>Visualize {{ selectedAlgorithm.displayName }}!</span>
 				</button>
-				<button class="btn btn-danger m-1" @click="clearPath">Clear Path</button>
-				<button class="btn btn-danger m-1" @click="clearWalls">Clear Walls</button>
-				<button class="btn btn-success m-1" @click="worldSetup = !worldSetup">
-					<span>{{ worldSetup ? "Complete Setup" : "Setup World" }}</span>
+				<button class="btn btn-danger m-1" @click="clearPath" key="clear-path">
+					<img src="@/assets/icons/clear-path.svg" alt="" />
+					<span>Clear path</span>
 				</button>
-				<button class="btn btn-warning m-1" @click="switchControl">Switch Camera</button>
-			</div>
+				<button class="btn btn-danger m-1" @click="clearWalls" key="clear-walls">
+					<img src="@/assets/icons/clear-wall.svg" alt="" />
+					<span>Clear walls</span>
+				</button>
+			</transition-group>
 		</div>
+		<button
+			class="btn btn-success btn-hover btn-setup m-1"
+			:class="{ setup: worldSetup }"
+			key="setup"
+			v-if="controlType != 'PointerLock'"
+			@click="worldSetup = !worldSetup"
+		>
+			<img src="@/assets/icons/setup.svg" alt="" />
+			<span>{{ worldSetup ? "Complete Setup" : "Setup World" }}</span>
+		</button>
+		<button
+			class="btn btn-warning btn-hover btn-camera m-1"
+			key="switch-camera"
+			v-if="!worldSetup"
+			@click="switchControl"
+		>
+			<img src="@/assets/icons/street-view.svg" alt="" v-if="controlType == 'Orbit'" />
+			<img src="@/assets/icons/perspective.svg" alt="" v-else />
+			<span>{{ controlType == "Orbit" ? "Third-person" : "Perspective" }}</span>
+		</button>
 	</div>
 </template>
 
@@ -56,23 +92,23 @@ export default {
 		algorithms: [
 			{
 				algorithm: "dijkstra",
-				displayName: "Dijkstra's",
-				type: "weighted"
+				displayName: "Dijkstra's Algorithm",
+				type: "weighted",
 			},
 			{
 				algorithm: "astar",
-				displayName: "A*",
-				type: "weighted"
+				displayName: "A* Search",
+				type: "weighted",
 			},
 			{
 				algorithm: "bfs",
 				displayName: "Breadth-first Search",
-				type: "unweighted"
+				type: "unweighted",
 			},
 			{
 				algorithm: "dfs",
 				displayName: "Depth-first Search",
-				type: "unweighted"
+				type: "unweighted",
 			},
 		],
 		selectedAlgorithm: null,
@@ -102,11 +138,19 @@ export default {
 			visited: { r: 0.27, g: 0.878, b: 0.968 },
 			path: { r: 1, g: 1, b: 0 },
 		},
+		hovering: ""
 	}),
 	watch: {
 		selectedAlgorithm: function(newVal, oldVal) {
-			if(newVal.type == "unweighted") {
+			if (newVal.type == "unweighted") {
 				this.clearWalls();
+			}
+		},
+		hovering: function(newVal, oldVal) {
+			if(newVal != '') {
+				setTimeout(() => {
+					this.hovering = '';
+				}, 1000);
 			}
 		}
 	},
@@ -128,12 +172,12 @@ export default {
 		},
 
 		updateEnds(obj) {
-			if(obj.start) {
+			if (obj.start) {
 				this.start = obj.start;
-				this.start.gridId = obj.start.row*this.cols + obj.start.col;
+				this.start.gridId = obj.start.row * this.cols + obj.start.col;
 			} else {
 				this.finish = obj.finish;
-				this.finish.gridId = obj.finish.row*this.cols + obj.finish.col;
+				this.finish.gridId = obj.finish.row * this.cols + obj.finish.col;
 			}
 		},
 
@@ -149,6 +193,7 @@ export default {
 		},
 
 		clearPath() {
+			TWEEN.removeAll();
 			for (let i = 0; i < this.rows; i++) {
 				for (let j = 0; j < this.cols; j++) {
 					let status = "default";
@@ -171,7 +216,7 @@ export default {
 		},
 
 		switchControl() {
-			if(this.controlType == "Orbit") {
+			if (this.controlType == "Orbit") {
 				this.controlType = "PointerLock";
 			} else {
 				this.controlType = "Orbit";
@@ -180,16 +225,23 @@ export default {
 
 		moveCamera() {
 			this.$refs.visualizer.controls.enabled = false;
-			console.log(JSON.parse(JSON.stringify(this.$refs.visualizer.camera.quaternion)));
 			let startQuaternion = this.$refs.visualizer.camera.quaternion.clone();
 			// let endQuaternion = new THREE.Quaternion().set(-0.4247082002778669, -0.33985114297998736, -0.17591989660616114, 0.8204732385702832);
-			let endQuaternion = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3( -1, 1, 1 ), Math.PI/10);
-			let time = {t: 0};
+			let endQuaternion = new THREE.Quaternion().setFromAxisAngle(
+				new THREE.Vector3(-1, 1, 1),
+				Math.PI / 10
+			);
+			let time = { t: 0 };
 			new TWEEN.Tween(time)
-				.to({t: 1}, 3000)
+				.to({ t: 1 }, 3000)
 				// .easing(TWEEN.Easing.Quadratic.InOut)
 				.onUpdate(() => {
-					THREE.Quaternion.slerp(startQuaternion, endQuaternion, this.$refs.visualizer.camera.quaternion, time.t);
+					THREE.Quaternion.slerp(
+						startQuaternion,
+						endQuaternion,
+						this.$refs.visualizer.camera.quaternion,
+						time.t
+					);
 				})
 				.onComplete(() => {
 					// this.$refs.visualizer.controls.enabled = true;
@@ -217,7 +269,7 @@ export default {
 				const finishNode = this.grid[this.finish.row][this.finish.col];
 				let nodesToAnimate = [];
 				let success;
-				if(this.selectedAlgorithm.type == "weighted") {
+				if (this.selectedAlgorithm.type == "weighted") {
 					success = weightedSearchAlgorithm(
 						this.grid,
 						startNode,
@@ -263,7 +315,13 @@ export default {
 				setTimeout(() => {
 					const node = visitedNodesInOrder[i];
 					if (!node) return;
-					tweenToColor(node, this.ground.geometry, [{r: 1.0, g: 0.321, b: 0.784}, this.colors.visited], 300, { position: false });
+					tweenToColor(
+						node,
+						this.ground.geometry,
+						[{ r: 1.0, g: 0.321, b: 0.784 }, this.colors.visited],
+						300,
+						{ position: false }
+					);
 				}, duration * i);
 			}
 		},
@@ -273,12 +331,18 @@ export default {
 			for (let i = 0; i < nodesInShortestPathOrder.length; i++) {
 				setTimeout(() => {
 					const node = nodesInShortestPathOrder[i];
-					tweenToColor(node, this.ground.geometry, [this.colors.path], undefined, { position: false });
+					tweenToColor(node, this.ground.geometry, [this.colors.path], undefined, {
+						position: false,
+					});
 					if (i == nodesInShortestPathOrder.length - 1) {
 						vm.visualizerState = "finished";
 					}
 				}, duration * i);
 			}
+		},
+
+		clearFocus() {
+			document.getElementsByClassName('header')[0].click();
 		},
 	},
 };
@@ -288,41 +352,120 @@ export default {
 .pathfinding-visualizer {
 	width: 100vw;
 	height: 100vh;
+	overflow: hidden;
 
 	.header-container {
 		position: absolute;
 		top: 0;
 		left: 0;
 		width: 100%;
-		background: white;
-		opacity: 0.2;
+		background: transparent;
 		overflow: auto;
 		transition: all 500ms ease-out;
-		&:hover {
-			opacity: 1;
-		}
 
 		&.setup {
-			opacity: 1;
 			background: rgba(0, 190, 0, 0.336);
 		}
 
 		.header {
 			width: 100%;
 			display: flex;
-			
+			align-items: center;
+
 			select {
+				font-size: 0.9em;
 				width: fit-content;
 			}
 		}
-
 	}
 
-	.btn-visualize {
-		background: blueviolet;
+	.btn {
+		display: flex;
+		align-items: center;
+		font-size: 0.9em;
+		box-shadow: 1px 3px 10px rgba(0, 0, 0, 0.15);
+		// border-radius: 30px;
+
+		&.btn-warning {
+			color: white;
+		}
+
+		img {
+			width: 20px;
+			margin-right: 4px;
+		}
 	}
-	.btn-clear {
-		background: yellowgreen;
+
+	.btn-hover {
+		position: absolute;
+		width: calc(70px + 1vw);
+		background-color: rgba(0, 0, 0, 0.15);
+		border: solid 1px rgba(0, 0, 0, 0.15);
+		overflow: hidden;
+		transition: all 300ms ease-out;
+		&:hover {
+			width: 170px;
+			span {
+				text-align: center;
+				opacity: 1;
+			}
+		}
+		img {
+			width: calc(25px + 0.5vw);
+		}
+		span {
+			opacity: 0;
+			position: absolute;
+			top: 50%;
+			transform: translateY(-50%);
+			width: 100%;
+			transition: all 300ms ease-out;
+		}
+	}
+
+	.btn-setup {
+		top: 60px;
+		right: 5px;
+		&.setup {
+			background: rgba(0, 190, 0, 0.35);
+		}
+	}
+	.btn-camera {
+		top: 120px;
+		right: 5px;
+	}
+
+	
+	@media (max-width: 686px) {
+		.btn {
+			span {
+				display: none;
+			}
+		}
+		.btn-hover {
+			&:hover {
+				width: calc(70px + 0.5vw);
+			}
+		}
+		.btn-camera {
+			display: none;
+		}
+	}
+
+	.slide-enter-active,
+	.slide-leave-active {
+		transition: all 500ms ease-in-out;
+	}
+	.slide-leave-active {
+		position: absolute;
+	}
+	.slide-enter,
+	.slide-leave-to {
+		opacity: 0;
+		transform: translateY(-50%);
+	}
+	.slide-move {
+		transition: all 500ms ease-in-out;
 	}
 }
 </style>

@@ -1,5 +1,5 @@
 <template>
-	<div id="visualizer" @click="controlType == 'PointerLock' ? controls.lock() : null">
+	<div id="visualizer" @click="controlType == 'PointerLock' ? controls.lock() : clearFocus">
 		<script type="x-shader/x-vertex" id="vertexShader">
 			varying vec3 vWorldPosition;
 
@@ -156,6 +156,8 @@ export default {
 			//Camera
 			this.camera = new THREE.PerspectiveCamera(45, width / height, 1, 10000);
 			this.camera.position.y = this.cameraY + 2000;
+			this.camera.position.x = -500;
+			this.camera.position.z = 500;
 			// var helper = new THREE.CameraHelper(this.camera);
 			// this.scene.add(helper);
 
@@ -418,28 +420,16 @@ export default {
 		},
 
 		setControls() {
+			let vm = this;
 			TWEEN.removeAll();
 			if (this.controlType == "Orbit") {
 				// OrbitControls
 				this.cameraY = this.defaultCameraY;
 				this.controls = this.orbitControls;
 				this.controls.enabled = true;
-				new TWEEN.Tween(this.camera.position)
-					.to({ x: 0, y: this.cameraY, z: 0 }, 2000)
-					.easing(TWEEN.Easing.Exponential.Out)
-					.onUpdate(() => {
-						this.camera.lookAt(this.scene.position);
-					})
-					.onComplete(() => {
-						let lookDirection = new THREE.Vector3();
-						this.camera.getWorldDirection( lookDirection );
-						this.controls.target.copy( this.camera.position ).add( lookDirection.multiplyScalar( this.cameraY ) );
-					})
-					.start();
-				new TWEEN.Tween(this.camera.rotation)
-					.to({ x: -Math.PI/2, y: 0, z: 0 }, 2000)
-					.easing(TWEEN.Easing.Exponential.Out)
-					.start();
+				setTimeout(() => {
+					vm.resetCamera();
+				}, 0)
 			} else if (this.controlType == "PointerLock") {
 				// PointerLock controls
 				this.cameraY = 2;
@@ -455,6 +445,25 @@ export default {
 					.easing(TWEEN.Easing.Exponential.Out)
 					.start();
 			}
+		},
+
+		resetCamera() {
+			new TWEEN.Tween(this.camera.position)
+				.to({ x: 0, y: this.cameraY, z: 0 }, 2000)
+				.easing(TWEEN.Easing.Exponential.Out)
+				.onUpdate(() => {
+					this.camera.lookAt(this.scene.position);
+				})
+				.onComplete(() => {
+					let lookDirection = new THREE.Vector3();
+					this.camera.getWorldDirection( lookDirection );
+					this.controls.target.copy( this.camera.position ).add( lookDirection.multiplyScalar( this.cameraY ) );
+				})
+				.start();
+			new TWEEN.Tween(this.camera.rotation)
+				.to({ x: -Math.PI/2, y: 0, z: 0 }, 2000)
+				.easing(TWEEN.Easing.Exponential.Out)
+				.start();
 		},
 
 		resizeHandler(event) {
@@ -625,6 +634,7 @@ export default {
 			this.moved = false;
 			this.currentEvent = event;
 			this.setMouseVector(event, "move");
+			this.clearFocus();
 		},
 		onMouseMove(event) {
 			if (!this.down) return;
@@ -704,6 +714,10 @@ export default {
 				row: Math.floor(faceIndex / 2 / this.rows),
 				col: Math.floor((faceIndex / 2) % this.cols),
 			};
+		},
+
+		clearFocus() {
+			document.getElementsByClassName('header')[0].click();
 		},
 
 		onKeyDown(event) {
