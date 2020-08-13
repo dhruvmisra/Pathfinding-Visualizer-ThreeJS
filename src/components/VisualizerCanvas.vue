@@ -1,5 +1,5 @@
 <template>
-	<div id="visualizer">
+	<div id="visualizer" @click="controlType == 'PointerLock' ? controls.lock() : null">
 		<script type="x-shader/x-vertex" id="vertexShader">
 			varying vec3 vWorldPosition;
 
@@ -29,7 +29,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls.js";
-import TWEEN from "@tweenjs/tween.js";
+import TWEEN, { removeAll } from "@tweenjs/tween.js";
 
 import { getAllNodes, tweenToColor } from "./algorithms/helpers.js";
 
@@ -44,13 +44,13 @@ export default {
 		"visualizerState",
 		"colors",
 		"controlType",
-		"lockRotation",
+		"worldSetup",
 	],
 	data: () => ({
 		scene: null,
 		camera: null,
-		// cameraY: 2,
-		cameraY: 200,
+		cameraY: 0,
+		defaultCameraY: 200,
 		renderer: null,
 		pointerLock: {
 			moveForward: false,
@@ -62,6 +62,8 @@ export default {
 			prevTime: null,
 		},
 		controls: null,
+		orbitControls: null,
+		pointerLockControls: null,
 		raycaster: null,
 		ambientLight: null,
 		hemisphereLight: null,
@@ -104,18 +106,39 @@ export default {
 		controlType: function(newVal, oldVal) {
 			this.setControls();
 		},
-		lockRotation: function(newVal, oldVal) {
+		worldSetup: function(newVal, oldVal) {
 			if (newVal) {
-				this.controls.enableRotate = false;
-				console.log(this.camera.quaternion);
-				this.controls.target.set(0, 0, 0);
-				this.camera.position.set(0, this.cameraY - 5, 0);
-				this.controls.update();
+				new TWEEN.Tween(this.camera.position)
+					.to({ x: 0, y: this.cameraY - 10, z: 0 }, 500)
+					.easing(TWEEN.Easing.Exponential.Out)
+					.onUpdate(() => {
+						this.camera.lookAt(this.scene.position);
+					})
+					.onComplete(() => {
+						this.controls.enableRotate = false;
+						let lookDirection = new THREE.Vector3();
+						this.camera.getWorldDirection( lookDirection );
+						this.controls.target.copy( this.camera.position ).add( lookDirection.multiplyScalar( this.cameraY - 10 ) );
+					})
+					.start();
+				new TWEEN.Tween(this.camera.rotation)
+					.to({ y: 0, z: 0 }, 500)
+					.easing(TWEEN.Easing.Exponential.Out)
+					.start();
 			} else {
-				this.controls.enableRotate = true;
-				this.camera.position.set(0, this.cameraY, 0);
+				new TWEEN.Tween(this.camera.position)
+					.to({ y: this.cameraY }, 500)
+					.easing(TWEEN.Easing.Exponential.Out)
+					.onComplete(() => {
+						this.controls.enableRotate = true;
+						this.controls.update();
+					})
+					.start();
 			}
 		},
+	},
+	created() {
+		this.cameraY = this.defaultCameraY;
 	},
 	mounted() {
 		this.init();
@@ -128,13 +151,13 @@ export default {
 			//Scene
 			this.scene = new THREE.Scene();
 			this.scene.background = new THREE.Color(0xbbd6ff);
-			this.scene.fog = new THREE.Fog(0xffffff, 1, 750);
+			this.scene.fog = new THREE.Fog(0xffffff, 0, 750);
 
 			//Camera
 			this.camera = new THREE.PerspectiveCamera(45, width / height, 1, 10000);
-			this.camera.position.y = this.cameraY;
-			// var helper = new THREE.CameraHelper( this.camera );
-			// this.scene.add( helper );
+			this.camera.position.y = this.cameraY + 2000;
+			// var helper = new THREE.CameraHelper(this.camera);
+			// this.scene.add(helper);
 
 			//Renderer
 			this.renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -144,6 +167,7 @@ export default {
 			document.getElementById("visualizer").appendChild(this.renderer.domElement);
 
 			// Controls
+			this.addControls();
 			this.setControls();
 
 			// Raycaster
@@ -153,17 +177,16 @@ export default {
 			let gridWidth = this.cols * this.nodeDimensions.width,
 				gridHeight = this.rows * this.nodeDimensions.height;
 			let vm = this;
-
 			let groundGeometry = new THREE.PlaneGeometry(gridWidth, gridHeight, this.cols, this.rows);
 			groundGeometry.rotateX(-Math.PI / 2);
 			let loader = new THREE.TextureLoader();
 			loader.load(
-				require("@/assets/textures/ground.jpg"),
+				require("@/assets/textures/ground-pebbles.png"),
 				function(texture) {
 					texture.wrapS = THREE.RepeatWrapping;
 					texture.wrapT = THREE.RepeatWrapping;
-					texture.repeat.x = 30;
-					texture.repeat.y = 30;
+					texture.repeat.x = vm.rows;
+					texture.repeat.y = vm.cols;
 					var groundMaterial = new THREE.MeshLambertMaterial({
 						map: texture,
 						side: THREE.FrontSide,
@@ -171,6 +194,7 @@ export default {
 					});
 					vm.ground = new THREE.Mesh(groundGeometry, groundMaterial);
 					vm.ground.receiveShadow = true;
+					vm.ground.position.y = 0.01;
 					vm.scene.add(vm.ground);
 					vm.initGrid();
 					vm.$emit("groundInitialized", vm.ground);
@@ -180,12 +204,20 @@ export default {
 					console.log(error);
 				}
 			);
+			let fakeGroundGeometry = new THREE.PlaneGeometry(1000, 1000, this.cols, this.rows);
+			fakeGroundGeometry.rotateX(-Math.PI / 2);
+			var fakeGroundMaterial = new THREE.MeshLambertMaterial({
+				color: 0x87775d,
+				side: THREE.FrontSide
+			});
+			let fakeGround = new THREE.Mesh(fakeGroundGeometry, fakeGroundMaterial);
+			vm.scene.add(fakeGround);
 
 			//Grid helper
 			var size = this.cols * this.nodeDimensions.height;
 			var divisions = this.cols;
 			var gridHelper = new THREE.GridHelper(size, divisions, 0x636b4c, 0x636b4c);
-			gridHelper.position.y = 0.01;
+			gridHelper.position.y = 0.02;
 			this.scene.add(gridHelper);
 
 			// Ambient Light
@@ -195,7 +227,7 @@ export default {
 			// LIGHTS
 			this.hemisphereLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.1);
 			this.hemisphereLight.color.setHSL(0.6, 1, 0.6);
-			this.hemisphereLight.groundColor.setHSL(0.095, 1, 0.75);
+			this.hemisphereLight.groundColor.setHex(0x87775d);
 			this.hemisphereLight.position.set(0, 5, 0);
 			this.scene.add(this.hemisphereLight);
 
@@ -217,7 +249,6 @@ export default {
 			this.directionalLight.shadow.camera.right = d;
 			this.directionalLight.shadow.camera.top = d;
 			this.directionalLight.shadow.camera.bottom = -d;
-
 			this.directionalLight.shadow.camera.far = 350;
 
 			// let dirLightHeper = new THREE.DirectionalLightHelper( this.directionalLight, 10 );
@@ -271,7 +302,7 @@ export default {
 			if (this.controlType == "PointerLock") {
 				this.pointerLockLoop();
 			}
-			if (this.lockRotation) {
+			if (this.worldSetup) {
 				this.hoverObjectLoop();
 			}
 			this.renderer.render(this.scene, this.camera);
@@ -282,7 +313,7 @@ export default {
 			if (!this.down) {
 				this.intersectedNode = null;
 				return;
-			};
+			}
 			this.raycaster.setFromCamera(this.mouse, this.camera);
 			var intersects = this.raycaster.intersectObjects(this.clickableObjects);
 			if (intersects.length > 0) {
@@ -294,42 +325,39 @@ export default {
 					coords = this.faceIndexToCoordinates(faceIndex);
 				}
 
-				if(this.grid[coords.row][coords.col] != this.intersectedNode) {
+				if (this.grid[coords.row][coords.col] != this.intersectedNode) {
 					let ends = ["start", "finish"];
-					if(ends.includes(this.grid[coords.row][coords.col].status) || (this.intersectedNode && ends.includes(this.intersectedNode.status))) {
+					if (
+						ends.includes(this.grid[coords.row][coords.col].status) ||
+						(this.intersectedNode && ends.includes(this.intersectedNode.status))
+					) {
 						let end;
-						if(ends.includes(this.grid[coords.row][coords.col].status)) {
+						if (ends.includes(this.grid[coords.row][coords.col].status)) {
 							end = this.grid[coords.row][coords.col].status;
 						} else {
 							end = this.intersectedNode.status;
 						}
 						let obj = {};
 						obj[end] = {
-							row: coords.row, 
-							col: coords.col
-						}
+							row: coords.row,
+							col: coords.col,
+						};
 						if (this.intersectedNode && ends.includes(this.intersectedNode.status)) {
 							this.intersectedNode.status = "default";
 						}
 						this.grid[coords.row][coords.col].status = end;
-						this.$emit('updateEnds', obj)
-					} else if(!this.intersectedNode || !ends.includes(this.intersectedNode.status)) {
+						this.$emit("updateEnds", obj);
+					} else if (!this.intersectedNode || !ends.includes(this.intersectedNode.status)) {
 						// if (this.intersectedNode) {
 						// 	this.intersectedNode.status = "default";
 						// }
-						this.grid[coords.row][coords.col].status = (this.grid[coords.row][coords.col].status == "wall") ? "default" : "wall";
+						this.grid[coords.row][coords.col].status =
+							this.grid[coords.row][coords.col].status == "wall" ? "default" : "wall";
 					}
-					
+
 					this.intersectedNode = this.grid[coords.row][coords.col];
 				}
 			}
-			// else {
-			// 	// restore previous intersection object (if it exists) to its original color
-			// 	if (this.intersectedNode) {
-			// 		this.intersectedNode.status = "default";
-			// 	}
-			// 	this.intersectedNode = null;
-			// }
 		},
 
 		pointerLockLoop() {
@@ -373,33 +401,59 @@ export default {
 			this.pointerLock.prevTime = time;
 		},
 
+		addControls() {
+			this.orbitControls = new OrbitControls(this.camera, this.renderer.domElement);
+			this.pointerLockControls = new PointerLockControls(this.camera, this.renderer.domElement);
+			this.pointerLockControls.addEventListener("lock", function() {
+				console.log("Pointer Locked");
+			});
+			this.pointerLockControls.addEventListener("unlock", function() {
+				console.log("Pointer Unlocked");
+			});
+			document.addEventListener("keydown", this.onKeyDown, false);
+			document.addEventListener("keyup", this.onKeyUp, false);
+			this.pointerLock.velocity = new THREE.Vector3();
+			this.pointerLock.direction = new THREE.Vector3();
+			this.scene.add(this.pointerLockControls.getObject());
+		},
+
 		setControls() {
+			TWEEN.removeAll();
 			if (this.controlType == "Orbit") {
 				// OrbitControls
-				this.controls = new OrbitControls(this.camera, this.renderer.domElement);
-				// this.controls.enableRotate = false;
-				// this.controls.screenSpacePanning = true;
+				this.cameraY = this.defaultCameraY;
+				this.controls = this.orbitControls;
+				this.controls.enabled = true;
+				new TWEEN.Tween(this.camera.position)
+					.to({ x: 0, y: this.cameraY, z: 0 }, 2000)
+					.easing(TWEEN.Easing.Exponential.Out)
+					.onUpdate(() => {
+						this.camera.lookAt(this.scene.position);
+					})
+					.onComplete(() => {
+						let lookDirection = new THREE.Vector3();
+						this.camera.getWorldDirection( lookDirection );
+						this.controls.target.copy( this.camera.position ).add( lookDirection.multiplyScalar( this.cameraY ) );
+					})
+					.start();
+				new TWEEN.Tween(this.camera.rotation)
+					.to({ x: -Math.PI/2, y: 0, z: 0 }, 2000)
+					.easing(TWEEN.Easing.Exponential.Out)
+					.start();
 			} else if (this.controlType == "PointerLock") {
-				this.cameraY = 2;
 				// PointerLock controls
-				this.controls = new PointerLockControls(this.camera, this.renderer.domElement);
-				this.controls.addEventListener("lock", function() {
-					console.log("Lock");
-				});
-				this.controls.addEventListener("unlock", function() {
-					console.log("Unlock");
-				});
-				this.scene.add(this.controls.getObject());
-				document.addEventListener("keydown", this.onKeyDown, false);
-				document.addEventListener("keyup", this.onKeyUp, false);
-				this.pointerLock.velocity = new THREE.Vector3();
-				this.pointerLock.direction = new THREE.Vector3();
-				let vm = this;
-				document.getElementById("visualizer").addEventListener("click", () => {
-					if (vm.controlType == "PointerLock") {
-						vm.controls.lock();
-					}
-				});
+				this.cameraY = 2;
+				this.controls.enabled = false;
+				this.controls = this.pointerLockControls;
+				let startPosition = this.ground.geometry.vertices[this.grid[this.start.row][this.start.col].faces[1]["a"]];
+				new TWEEN.Tween(this.camera.position)
+					.to(startPosition, 2000)
+					.easing(TWEEN.Easing.Exponential.Out)
+					.start();
+				new TWEEN.Tween(this.camera.rotation)
+					.to({ x: 0, y: 5*Math.PI/4, z: 0 }, 2000)
+					.easing(TWEEN.Easing.Exponential.Out)
+					.start();
 			}
 		},
 
@@ -553,7 +607,13 @@ export default {
 		},
 
 		showWall(wall) {
+			let y = wall.position.y;
 			wall.visible = true;
+			wall.position.setY(wall.geometry.parameters.height);
+			new TWEEN.Tween(wall.position)
+				.to({ y: y }, 1000)
+				.easing(TWEEN.Easing.Bounce.Out)
+				.start();
 		},
 
 		hideWall(wall) {
@@ -564,11 +624,12 @@ export default {
 			this.down = true;
 			this.moved = false;
 			this.currentEvent = event;
+			this.setMouseVector(event, "move");
 		},
 		onMouseMove(event) {
 			if (!this.down) return;
 			this.moved = true;
-			if (this.lockRotation) {
+			if (this.worldSetup) {
 				this.setMouseVector(event, "move");
 			}
 		},
@@ -599,8 +660,8 @@ export default {
 		},
 
 		calcDist(x, y) {
-      return (x*x + y*y);
-    },
+			return x * x + y * y;
+		},
 
 		setMouseVector(event, type) {
 			let touchEvent = type == "click" ? this.currentEvent : event;
@@ -620,8 +681,8 @@ export default {
 		},
 
 		clickHandler(event) {
+			if (this.worldSetup || this.controlType == "PointerLock") return;
 			this.setMouseVector(event, "click");
-			console.log('click handler', this.mouse)
 			this.raycaster.setFromCamera(this.mouse, this.camera);
 			let intersects = this.raycaster.intersectObjects(this.clickableObjects); //array
 			if (intersects.length > 0) {

@@ -11,26 +11,27 @@
 			:visualizerState="visualizerState"
 			:colors="colors"
 			:controlType="controlType"
-			:lockRotation="lockRotation"
+			:worldSetup="worldSetup"
 			@clickEvent="onClick"
 			@groundInitialized="ground = $event"
 			@updateEnds="updateEnds"
 		/>
-		<div class="header-container">
+		<div class="header-container" :class="{ setup: worldSetup }">
 			<div class="header py-1">
-				<select class="form-select  m-1" id="algorithms" v-model="selectedAlgorithm">
+				<select class="form-select  m-1" id="algorithms" v-model="selectedAlgorithm" :disabled="visualizerState == 'running' || worldSetup">
 					<option :value="algo" v-for="algo in algorithms" :key="algo.algorithm">{{
 						algo.displayName
 					}}</option>
 				</select>
-				<button class="btn btn-primary m-1" @click="visualizeAlgorithm(15)">
+				<button class="btn btn-primary m-1" @click="visualizeAlgorithm(15)" :disabled="visualizerState == 'running' || worldSetup">
 					Visualize {{ selectedAlgorithm.displayName }}!
 				</button>
 				<button class="btn btn-danger m-1" @click="clearPath">Clear Path</button>
 				<button class="btn btn-danger m-1" @click="clearWalls">Clear Walls</button>
-				<button class="btn btn-info m-1" @click="lockRotation = !lockRotation">
-					Setup World
+				<button class="btn btn-success m-1" @click="worldSetup = !worldSetup">
+					<span>{{ worldSetup ? "Complete Setup" : "Setup World" }}</span>
 				</button>
+				<button class="btn btn-warning m-1" @click="switchControl">Switch Camera</button>
 			</div>
 		</div>
 	</div>
@@ -89,10 +90,10 @@ export default {
 			col: 5,
 		},
 		finish: {
-			row: 10,
-			col: 15,
+			row: 16,
+			col: 22,
 		},
-		lockRotation: false,
+		worldSetup: false,
 		colors: {
 			default: { r: 1, g: 1, b: 1 },
 			start: { r: 0, g: 1, b: 0 },
@@ -167,6 +168,14 @@ export default {
 				}
 			}
 			this.visualizerState = "clear";
+		},
+
+		switchControl() {
+			if(this.controlType == "Orbit") {
+				this.controlType = "PointerLock";
+			} else {
+				this.controlType = "Orbit";
+			}
 		},
 
 		moveCamera() {
@@ -254,7 +263,7 @@ export default {
 				setTimeout(() => {
 					const node = visitedNodesInOrder[i];
 					if (!node) return;
-					tweenToColor(node, this.ground.geometry, [{r: 1.0, g: 0.321, b: 0.784}, this.colors.visited], 300, { position: true });
+					tweenToColor(node, this.ground.geometry, [{r: 1.0, g: 0.321, b: 0.784}, this.colors.visited], 300, { position: false });
 				}, duration * i);
 			}
 		},
@@ -264,7 +273,7 @@ export default {
 			for (let i = 0; i < nodesInShortestPathOrder.length; i++) {
 				setTimeout(() => {
 					const node = nodesInShortestPathOrder[i];
-					tweenToColor(node, this.ground.geometry, [this.colors.path], undefined, { position: true });
+					tweenToColor(node, this.ground.geometry, [this.colors.path], undefined, { position: false });
 					if (i == nodesInShortestPathOrder.length - 1) {
 						vm.visualizerState = "finished";
 					}
@@ -291,6 +300,11 @@ export default {
 		transition: all 500ms ease-out;
 		&:hover {
 			opacity: 1;
+		}
+
+		&.setup {
+			opacity: 1;
+			background: rgba(0, 190, 0, 0.336);
 		}
 
 		.header {
