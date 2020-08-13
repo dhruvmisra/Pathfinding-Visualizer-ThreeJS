@@ -650,6 +650,7 @@ export default {
 			this.down = false;
 		},
 		onMouseup(event) {
+			let threshold = 25;
 			if (this.moved) {
 				let dist = 0;
 				if (this.currentEvent.touches && this.currentEvent.touches.length > 0) {
@@ -657,7 +658,7 @@ export default {
 						this.currentEvent.touches[0].pageX - event.changedTouches[0].pageX,
 						this.currentEvent.touches[0].pageY - event.changedTouches[0].pageY
 					);
-					dist > this.threshold ? this.moveHandler(event) : this.clickHandler(event);
+					dist > threshold ? this.moveHandler(event) : this.clickHandler(event);
 				} else {
 					this.moveHandler(event);
 				}

@@ -469,7 +469,7 @@ export default {
 	}
 
 	
-	@media (max-width: 686px) {
+	@media (max-width: 792px) {
 		.btn {
 			span {
 				display: none;
