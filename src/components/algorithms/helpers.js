@@ -13,10 +13,19 @@ export function getAllNodes(grid) {
 export function getNodesInShortestPathOrder(finishNode) {
 	const nodesInShortestPathOrder = [];
 	let currentNode = finishNode;
+	//Excluding finish node
+	if(currentNode.previousNode != null) {
+		currentNode = currentNode.previousNode;
+	}
 	while (currentNode !== null) {
+		// Excluding start node
+		if(currentNode.previousNode === null) {
+			break;
+		}
 		nodesInShortestPathOrder.unshift(currentNode);
 		currentNode = currentNode.previousNode;
 	}
+
 	return nodesInShortestPathOrder;
 }
 

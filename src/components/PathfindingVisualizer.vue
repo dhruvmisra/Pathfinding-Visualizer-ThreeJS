@@ -22,7 +22,7 @@
 					class="form-select  m-1"
 					id="algorithms"
 					v-model="selectedAlgorithm"
-					:disabled="visualizerState == 'running' || worldSetup"
+					:disabled="visualizerState == 'running'"
 					key="algo-select"
 					v-if="!worldSetup"
 				>
@@ -32,7 +32,7 @@
 				</select>
 				<button
 					class="btn btn-primary m-1"
-					@click="visualizeAlgorithm(15)"
+					@click="visualizeAlgorithm()"
 					:disabled="visualizerState == 'running' || worldSetup"
 					key="visualize"
 					v-if="!worldSetup"
@@ -48,6 +48,18 @@
 					<img src="@/assets/icons/clear-wall.svg" alt="" />
 					<span>Clear walls</span>
 				</button>
+				<select
+					class="form-select m-1"
+					id="algorithms"
+					v-model="selectedSpeed"
+					:disabled="visualizerState == 'running'"
+					key="speed-select"
+					v-if="!worldSetup"
+				>
+					<option :value="speed" v-for="speed in speeds" :key="speed.text">{{
+						speed.text
+					}}</option>
+				</select>
 			</transition-group>
 		</div>
 		<button
@@ -112,6 +124,25 @@ export default {
 			},
 		],
 		selectedAlgorithm: null,
+		speeds: [
+			{
+				text: "Fast",
+				value: 15,
+			},
+			{
+				text: "Medium",
+				value: 25,
+			},
+			{
+				text: "Slow",
+				value: 45,
+			},
+			{
+				text: "Super Slow",
+				value: 80,
+			},
+		],
+		selectedSpeed: null,
 		nodeDimensions: {
 			height: 5,
 			width: 5,
@@ -158,6 +189,7 @@ export default {
 		this.selectedAlgorithm = this.algorithms[0];
 		this.start.gridId = this.start.row * this.cols + this.start.col;
 		this.finish.gridId = this.finish.row * this.cols + this.finish.col;
+		this.selectedSpeed = this.speeds[0];
 	},
 	methods: {
 		onClick(node) {
@@ -260,7 +292,8 @@ export default {
 			// 	.start();
 		},
 
-		visualizeAlgorithm(duration) {
+		visualizeAlgorithm() {
+			let timerDelay = this.selectedSpeed.value;
 			this.clearPath();
 			// this.moveCamera();
 			this.$nextTick(() => {
@@ -291,17 +324,17 @@ export default {
 				console.log("success:", success);
 				const nodesInShortestPathOrder = getNodesInShortestPathOrder(finishNode);
 				this.$nextTick(() => {
-					this.animateAlgorithm(nodesToAnimate, nodesInShortestPathOrder, duration);
+					this.animateAlgorithm(nodesToAnimate, nodesInShortestPathOrder, timerDelay);
 				});
 			});
 		},
 
-		animateAlgorithm(visitedNodesInOrder, nodesInShortestPathOrder, duration) {
+		animateAlgorithm(visitedNodesInOrder, nodesInShortestPathOrder, timerDelay) {
 			for (let i = 0; i <= visitedNodesInOrder.length; i++) {
 				if (i === visitedNodesInOrder.length) {
 					setTimeout(() => {
-						this.animateShortestPath(nodesInShortestPathOrder, 5 * duration);
-					}, duration * i);
+						this.animateShortestPath(nodesInShortestPathOrder, 5 * timerDelay);
+					}, timerDelay * i);
 					return;
 				}
 				if (
@@ -322,11 +355,11 @@ export default {
 						300,
 						{ position: false }
 					);
-				}, duration * i);
+				}, timerDelay * i);
 			}
 		},
 
-		animateShortestPath(nodesInShortestPathOrder, duration) {
+		animateShortestPath(nodesInShortestPathOrder, timerDelay) {
 			let vm = this;
 			for (let i = 0; i < nodesInShortestPathOrder.length; i++) {
 				setTimeout(() => {
@@ -337,7 +370,7 @@ export default {
 					if (i == nodesInShortestPathOrder.length - 1) {
 						vm.visualizerState = "finished";
 					}
-				}, duration * i);
+				}, timerDelay * i);
 			}
 		},
 
