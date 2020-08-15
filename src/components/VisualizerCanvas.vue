@@ -30,6 +30,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls.js";
 import TWEEN, { removeAll } from "@tweenjs/tween.js";
+import Stats from 'three/examples/jsm/libs/stats.module.js';
 
 import { getAllNodes, tweenToColor } from "./algorithms/helpers.js";
 
@@ -50,7 +51,7 @@ export default {
 		scene: null,
 		camera: null,
 		cameraY: 0,
-		defaultCameraY: 200,
+		defaultCameraY: 300,
 		renderer: null,
 		pointerLock: {
 			moveForward: false,
@@ -69,19 +70,21 @@ export default {
 		hemisphereLight: null,
 		directionalLight: null,
 		ground: null,
+		wallGeomtery: null,
+		wallMaterials: [],
 		walls: {},
 		wallTextures: [
 			{
-				path: "building.jpg",
-				repeatY: 2,
+				path: "building1.png",
+				repeatY: 1,
 			},
 			{
 				path: "building2.png",
-				repeatY: 3,
+				repeatY: 1,
 			},
 			{
-				path: "building3.png",
-				repeatY: 4,
+				path: "building4.png",
+				repeatY: 3,
 			},
 		],
 		down: false,
@@ -89,11 +92,21 @@ export default {
 		currentEvent: null,
 		mouse: null,
 		intersectedNode: null,
+		stats: null,
 	}),
 	computed: {
 		clickableObjects() {
 			let objects = [];
 			objects.push(this.ground);
+			for (let id of Object.keys(this.walls)) {
+				if (this.walls[id].visible) {
+					objects.push(this.walls[id]);
+				}
+			}
+			return objects;
+		},
+		collidableObjects() {
+			let objects = [];
 			for (let id of Object.keys(this.walls)) {
 				if (this.walls[id].visible) {
 					objects.push(this.walls[id]);
@@ -183,7 +196,7 @@ export default {
 			groundGeometry.rotateX(-Math.PI / 2);
 			let loader = new THREE.TextureLoader();
 			loader.load(
-				require("@/assets/textures/ground-pebbles.png"),
+				require("@/assets/textures/ground-bricks.png"),
 				function(texture) {
 					texture.wrapS = THREE.RepeatWrapping;
 					texture.wrapT = THREE.RepeatWrapping;
@@ -209,11 +222,12 @@ export default {
 			let fakeGroundGeometry = new THREE.PlaneGeometry(1000, 1000, this.cols, this.rows);
 			fakeGroundGeometry.rotateX(-Math.PI / 2);
 			var fakeGroundMaterial = new THREE.MeshLambertMaterial({
-				color: 0x87775d,
+				// color: 0x87775d,
+				color: 0xB1B5CC,
 				side: THREE.FrontSide
 			});
 			let fakeGround = new THREE.Mesh(fakeGroundGeometry, fakeGroundMaterial);
-			vm.scene.add(fakeGround);
+			this.scene.add(fakeGround);
 
 			//Grid helper
 			var size = this.cols * this.nodeDimensions.height;
@@ -221,6 +235,33 @@ export default {
 			var gridHelper = new THREE.GridHelper(size, divisions, 0x636b4c, 0x636b4c);
 			gridHelper.position.y = 0.02;
 			this.scene.add(gridHelper);
+
+			// Wall
+			// let wallHeight = this.nodeDimensions.width * 2 + Math.random() * this.nodeDimensions.width * 3;
+			let wallHeight = this.nodeDimensions.height * 2;
+			this.wallGeomtery = new THREE.BoxBufferGeometry(
+				this.nodeDimensions.width,
+				wallHeight,
+				this.nodeDimensions.height
+			);
+			let wallTextureObject = this.wallTextures[
+				Math.floor(Math.random() * this.wallTextures.length)
+			];
+			this.wallMaterials.push(new THREE.MeshPhongMaterial({ color: new THREE.Color(this.colors.wall.r, this.colors.wall.g, this.colors.wall.b) }));
+			for(let tex of this.wallTextures) {
+				loader.load(
+					require("@/assets/textures/" + tex.path),
+					function(texture) {
+						texture.wrapT = THREE.RepeatWrapping;
+						texture.repeat.y = tex.repeatY;
+						vm.wallMaterials.push(new THREE.MeshLambertMaterial({ map: texture }));
+					},
+					undefined,
+					function(error) {
+						console.log(error);
+					}
+				);
+			}
 
 			// Ambient Light
 			this.ambientLight = new THREE.AmbientLight(0xffffff, 1);
@@ -277,9 +318,14 @@ export default {
 				fragmentShader: fragmentShader,
 				side: THREE.BackSide,
 			});
-
 			var sky = new THREE.Mesh(skyGeo, skyMat);
 			this.scene.add(sky);
+
+			// Stats
+			this.stats = new Stats();
+			this.stats.dom.style.top = 'auto';
+			this.stats.dom.style.bottom = 0;
+			document.getElementById("visualizer").appendChild( this.stats.dom );
 
 			//Resize handler
 			window.addEventListener("resize", this.resizeHandler);
@@ -309,6 +355,7 @@ export default {
 			}
 			this.renderer.render(this.scene, this.camera);
 			TWEEN.update();
+			this.stats.update();
 		},
 
 		hoverObjectLoop() {
@@ -363,36 +410,44 @@ export default {
 		},
 
 		pointerLockLoop() {
-			this.raycaster.ray.origin.copy(this.controls.getObject().position);
-			this.raycaster.ray.origin.y -= this.cameraY;
-
 			var time = performance.now();
 			var delta = (time - this.pointerLock.prevTime) / 1000;
-			this.pointerLock.velocity.x -= this.pointerLock.velocity.x * 10.0 * delta;
-			this.pointerLock.velocity.z -= this.pointerLock.velocity.z * 10.0 * delta;
 
-			this.pointerLock.velocity.y -= 9.8 * 100.0 * delta; // 100.0 = mass
+			var cameraDirection = this.controls.getDirection(new THREE.Vector3(0, 0, 0)).clone();
+			let raycaster = new THREE.Raycaster(this.controls.getObject().position, cameraDirection);
+			// this.raycaster.ray.origin.copy(this.controls.getObject().position);
+			// this.raycaster.ray.origin.y -= this.cameraY;
 
-			this.pointerLock.direction.z =
-				Number(this.pointerLock.moveForward) - Number(this.pointerLock.moveBackward);
-			this.pointerLock.direction.x =
-				Number(this.pointerLock.moveRight) - Number(this.pointerLock.moveLeft);
-			this.pointerLock.direction.normalize(); // this ensures consistent movements in all directions
+			let collisionDistance = 5;
+			let intersections = raycaster.intersectObjects( this.collidableObjects );
 
-			if (this.pointerLock.moveForward || this.pointerLock.moveBackward)
-				this.pointerLock.velocity.z -= this.pointerLock.direction.z * 400.0 * delta;
-			if (this.pointerLock.moveLeft || this.pointerLock.moveRight)
-				this.pointerLock.velocity.x -= this.pointerLock.direction.x * 400.0 * delta;
-
-			// if (onObject === true) {
-			// 	this.pointerLock.velocity.y = Math.max(0, this.pointerLock.velocity.y);
-			// 	canJump = true;
-			// }
-
-			this.controls.moveRight(-this.pointerLock.velocity.x * delta);
-			this.controls.moveForward(-this.pointerLock.velocity.z * delta);
-
-			this.controls.getObject().position.y += this.pointerLock.velocity.y * delta; // new behavior
+			if(intersections.length > 0 && intersections[0].distance < collisionDistance) {
+				this.pointerLock.velocity.x = 0;
+				this.pointerLock.velocity.z = 0;
+				console.log(intersections[0].distance)
+			} else {
+				
+				this.pointerLock.velocity.x -= this.pointerLock.velocity.x * 10.0 * delta;
+				this.pointerLock.velocity.z -= this.pointerLock.velocity.z * 10.0 * delta;
+	
+				this.pointerLock.velocity.y -= 9.8 * 80.0 * delta; // 80.0 = mass
+	
+				this.pointerLock.direction.z =
+					Number(this.pointerLock.moveForward) - Number(this.pointerLock.moveBackward);
+				this.pointerLock.direction.x =
+					Number(this.pointerLock.moveRight) - Number(this.pointerLock.moveLeft);
+				this.pointerLock.direction.normalize(); // this ensures consistent movements in all directions
+	
+				if (this.pointerLock.moveForward || this.pointerLock.moveBackward)
+					this.pointerLock.velocity.z -= this.pointerLock.direction.z * 400.0 * delta;
+				if (this.pointerLock.moveLeft || this.pointerLock.moveRight)
+					this.pointerLock.velocity.x -= this.pointerLock.direction.x * 400.0 * delta;
+	
+				this.controls.moveRight(-this.pointerLock.velocity.x * delta);
+				this.controls.moveForward(-this.pointerLock.velocity.z * delta);
+	
+				this.controls.getObject().position.y += this.pointerLock.velocity.y * delta; // new behavior
+			}
 
 			if (this.controls.getObject().position.y < this.cameraY) {
 				this.pointerLock.velocity.y = 0;
@@ -401,6 +456,32 @@ export default {
 			}
 
 			this.pointerLock.prevTime = time;
+		},
+
+		animatePlayer(delta) {
+			// Gradual slowdown
+			playerVelocity.x -= playerVelocity.x * 10.0 * delta;
+			playerVelocity.z -= playerVelocity.z * 10.0 * delta;
+
+			if (moveForward) {
+				playerVelocity.z -= PLAYERSPEED * delta;
+			} 
+			if (moveBackward) {
+				playerVelocity.z += PLAYERSPEED * delta;
+			} 
+			if (moveLeft) {
+				playerVelocity.x -= PLAYERSPEED * delta;
+			} 
+			if (moveRight) {
+				playerVelocity.x += PLAYERSPEED * delta;
+			}
+			if( !( moveForward || moveBackward || moveLeft ||moveRight)) {
+				// No movement key being pressed. Stop movememnt
+				playerVelocity.x = 0;
+				playerVelocity.z = 0;
+			}
+			controls.getObject().translateX(playerVelocity.x * delta);
+			controls.getObject().translateZ(playerVelocity.z * delta);
 		},
 
 		addControls() {
@@ -536,7 +617,6 @@ export default {
 		},
 
 		nodeWatcher(newVal, oldVal) {
-			// newVal is a node
 			// console.log('WATCHER', newVal);
 			if (this.visualizerState == "running") return;
 			this.updateNode(newVal);
@@ -565,62 +645,38 @@ export default {
 		},
 
 		addWall(node) {
-			let vm = this;
+			let materialId = 1 + Math.floor(Math.random()*(this.wallMaterials.length-1));
+			let scaleY = 0.5 + Math.random();
 
-			let height = this.nodeDimensions.width * 2 + Math.random() * this.nodeDimensions.width * 3;
-			let wallGeomtery = new THREE.BoxBufferGeometry(
-				this.nodeDimensions.width,
-				height,
-				this.nodeDimensions.height
-			);
+			let wall = new THREE.Mesh(this.wallGeomtery, this.wallMaterials[materialId]);
+			wall.name = "wall";
+			wall.wallId = node.id;
+			wall.scale.y = scaleY;
+			wall.castShadow = true;
+			wall.receiveShadow = true;
+			this.scene.add(wall);
+			this.$set(this.walls, node.id, wall);
 
-			let wallTextureObject = this.wallTextures[
-				Math.floor(Math.random() * this.wallTextures.length)
-			];
-			let loader = new THREE.TextureLoader();
-			loader.load(
-				require("@/assets/textures/" + wallTextureObject.path),
-				function(texture) {
-					texture.wrapT = THREE.RepeatWrapping;
-					texture.repeat.y = wallTextureObject.repeatY;
-					let wallMaterial = new THREE.MeshLambertMaterial({
-						map: texture,
-					});
-					let wall = new THREE.Mesh(wallGeomtery, wallMaterial);
-					wall.name = "wall";
-					wall.wallId = node.id;
-					wall.castShadow = true;
-					wall.receiveShadow = true;
-					vm.scene.add(wall);
-
-					let gridWidth = vm.cols * vm.nodeDimensions.width,
-						gridHeight = vm.rows * vm.nodeDimensions.height;
-					let x = -gridWidth / 2 + vm.nodeDimensions.width / 2 + node.col * vm.nodeDimensions.width,
-						y = height / 2,
-						z =
-							-gridHeight / 2 + vm.nodeDimensions.height / 2 + node.row * vm.nodeDimensions.height;
-					wall.position.set(x, height, z);
-					new TWEEN.Tween(wall.position)
-						.to({ x: x, y: y, z: z }, 1000)
-						.easing(TWEEN.Easing.Bounce.Out)
-						.onComplete(() => {
-							vm.$set(vm.walls, node.id, wall);
-						})
-						.start();
-				},
-				undefined,
-				function(error) {
-					console.log(error);
-				}
-			);
+			let gridWidth = this.cols * this.nodeDimensions.width;
+			let gridHeight = this.rows * this.nodeDimensions.height;
+			let height = this.wallGeomtery.parameters.height * wall.scale.y;
+			let x = -gridWidth / 2 + this.nodeDimensions.width / 2 + node.col * this.nodeDimensions.width,
+				y = height / 2,
+				z =
+					-gridHeight / 2 + this.nodeDimensions.height / 2 + node.row * this.nodeDimensions.height;
+			wall.position.set(x, height, z);
+			new TWEEN.Tween(wall.position)
+				.to({ x: x, y: y, z: z }, 1000)
+				.easing(TWEEN.Easing.Bounce.Out)
+				.start();
 		},
 
 		showWall(wall) {
-			let y = wall.position.y;
+			let height = wall.geometry.parameters.height * wall.scale.y;
 			wall.visible = true;
-			wall.position.setY(wall.geometry.parameters.height);
+			wall.position.setY(height);
 			new TWEEN.Tween(wall.position)
-				.to({ y: y }, 1000)
+				.to({ y: height/2 }, 1000)
 				.easing(TWEEN.Easing.Bounce.Out)
 				.start();
 		},

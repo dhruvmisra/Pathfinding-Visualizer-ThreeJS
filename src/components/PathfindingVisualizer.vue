@@ -19,7 +19,7 @@
 		<div class="header-container">
 			<transition-group name="slide" mode="out-in" tag="div" class="header py-1">
 				<select
-					class="form-select  m-1"
+					class="form-select m-1"
 					id="algorithms"
 					v-model="selectedAlgorithm"
 					:disabled="visualizerState == 'running'"
@@ -47,6 +47,12 @@
 				<button class="btn btn-danger m-1" @click="clearWalls" key="clear-walls">
 					<img src="@/assets/icons/clear-wall.svg" alt="" />
 					<span>Clear walls</span>
+				</button>
+				<button class="btn btn-info m-1" @click="generateMaze(mazeAlgorithms[0])" key="maze-0">
+					<span>{{ mazeAlgorithms[0] }}</span>
+				</button>
+				<button class="btn btn-info m-1" @click="generateMaze(mazeAlgorithms[1])" key="maze-1">
+					<span>{{ mazeAlgorithms[1] }}</span>
 				</button>
 				<select
 					class="form-select m-1"
@@ -88,12 +94,12 @@
 <script>
 import VisualizerCanvas from "./VisualizerCanvas.vue";
 import * as THREE from "three";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import TWEEN from "@tweenjs/tween.js";
 
-import { getAllNodes, getNodesInShortestPathOrder, tweenToColor } from "./algorithms/helpers.js";
+import { getNodesInShortestPathOrder, tweenToColor } from "./algorithms/helpers.js";
 import { weightedSearchAlgorithm } from "./algorithms/weightedSearchAlgorithm.js";
 import { unweightedSearchAlgorithm } from "./algorithms/unweightedSearchAlgorithm.js";
+import { randomMaze, recursiveDivisionMaze } from "./algorithms/mazeAlgorithms.js";
 
 export default {
 	components: {
@@ -143,9 +149,13 @@ export default {
 			},
 		],
 		selectedSpeed: null,
+		mazeAlgorithms: [
+			"Random Maze",
+			"Recursive Division",
+		],
 		nodeDimensions: {
-			height: 5,
-			width: 5,
+			height: 15,
+			width: 15,
 		},
 		rows: 30,
 		cols: 30,
@@ -165,23 +175,15 @@ export default {
 			default: { r: 1, g: 1, b: 1 },
 			start: { r: 0, g: 1, b: 0 },
 			finish: { r: 1, g: 0, b: 0 },
-			wall: { r: 0.2, g: 0.2, b: 0.6 },
+			wall: { r: 0.109, g: 0.109, b: 0.45 },
 			visited: { r: 0.27, g: 0.878, b: 0.968 },
 			path: { r: 1, g: 1, b: 0 },
-		},
-		hovering: ""
+		}
 	}),
 	watch: {
 		selectedAlgorithm: function(newVal, oldVal) {
 			if (newVal.type == "unweighted") {
 				this.clearWalls();
-			}
-		},
-		hovering: function(newVal, oldVal) {
-			if(newVal != '') {
-				setTimeout(() => {
-					this.hovering = '';
-				}, 1000);
 			}
 		}
 	},
@@ -280,16 +282,6 @@ export default {
 					// this.$refs.visualizer.controls.update();
 				})
 				.start();
-			// new TWEEN.Tween(this.$refs.visualizer.camera)
-			// 	.to({ position: { x: -100, y: 200, z: 100 }}, 1000)
-			// 	.onUpdate(() => {
-			// 		this.$refs.visualizer.controls.update();
-			// 	})
-			// 	.onComplete(() => {
-			// 		console.log(this.$refs.visualizer.camera.quaternion)
-			// 		this.$refs.visualizer.controls.enabled = true;
-			// 	})
-			// 	.start();
 		},
 
 		visualizeAlgorithm() {
@@ -370,6 +362,26 @@ export default {
 					if (i == nodesInShortestPathOrder.length - 1) {
 						vm.visualizerState = "finished";
 					}
+				}, timerDelay * i);
+			}
+		},
+
+		generateMaze(algo) {
+			this.clearWalls();
+			let nodesToAnimate = [];
+			if(algo == "Random Maze") {
+				randomMaze(this.grid, nodesToAnimate, "wall");
+			} else {
+				recursiveDivisionMaze(this.grid, 2, this.grid.length - 3, 2, this.grid[0].length - 3, "horizontal", false, nodesToAnimate, "wall");
+			}
+			this.animateMaze(nodesToAnimate, "wall", 30);
+		},
+
+		animateMaze(visitedNodesInOrder, type, timerDelay) {
+			for (let i = 0; i < visitedNodesInOrder.length; i++) {
+				setTimeout(() => {
+					const node = visitedNodesInOrder[i];
+					node.status = type;
 				}, timerDelay * i);
 			}
 		},
