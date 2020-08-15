@@ -154,8 +154,8 @@ export default {
 			"Recursive Division",
 		],
 		nodeDimensions: {
-			height: 15,
-			width: 15,
+			height: 8,
+			width: 8,
 		},
 		rows: 30,
 		cols: 30,

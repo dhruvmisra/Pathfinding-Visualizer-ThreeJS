@@ -30,7 +30,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls.js";
 import TWEEN, { removeAll } from "@tweenjs/tween.js";
-import Stats from 'three/examples/jsm/libs/stats.module.js';
+import Stats from "three/examples/jsm/libs/stats.module.js";
 
 import { getAllNodes, tweenToColor } from "./algorithms/helpers.js";
 
@@ -51,7 +51,7 @@ export default {
 		scene: null,
 		camera: null,
 		cameraY: 0,
-		defaultCameraY: 300,
+		defaultCameraY: 350,
 		renderer: null,
 		pointerLock: {
 			moveForward: false,
@@ -92,6 +92,7 @@ export default {
 		currentEvent: null,
 		mouse: null,
 		intersectedNode: null,
+		clock: null,
 		stats: null,
 	}),
 	computed: {
@@ -130,8 +131,10 @@ export default {
 					.onComplete(() => {
 						this.controls.enableRotate = false;
 						let lookDirection = new THREE.Vector3();
-						this.camera.getWorldDirection( lookDirection );
-						this.controls.target.copy( this.camera.position ).add( lookDirection.multiplyScalar( this.cameraY - 10 ) );
+						this.camera.getWorldDirection(lookDirection);
+						this.controls.target
+							.copy(this.camera.position)
+							.add(lookDirection.multiplyScalar(this.cameraY - 10));
 					})
 					.start();
 				new TWEEN.Tween(this.camera.rotation)
@@ -164,7 +167,7 @@ export default {
 			//Scene
 			this.scene = new THREE.Scene();
 			this.scene.background = new THREE.Color(0xbbd6ff);
-			this.scene.fog = new THREE.Fog(0xffffff, 0, 750);
+			this.scene.fog = new THREE.Fog(0xffffff, 0, 1000);
 
 			//Camera
 			this.camera = new THREE.PerspectiveCamera(45, width / height, 1, 10000);
@@ -223,8 +226,8 @@ export default {
 			fakeGroundGeometry.rotateX(-Math.PI / 2);
 			var fakeGroundMaterial = new THREE.MeshLambertMaterial({
 				// color: 0x87775d,
-				color: 0xB1B5CC,
-				side: THREE.FrontSide
+				color: 0xb1b5cc,
+				side: THREE.FrontSide,
 			});
 			let fakeGround = new THREE.Mesh(fakeGroundGeometry, fakeGroundMaterial);
 			this.scene.add(fakeGround);
@@ -247,8 +250,12 @@ export default {
 			let wallTextureObject = this.wallTextures[
 				Math.floor(Math.random() * this.wallTextures.length)
 			];
-			this.wallMaterials.push(new THREE.MeshPhongMaterial({ color: new THREE.Color(this.colors.wall.r, this.colors.wall.g, this.colors.wall.b) }));
-			for(let tex of this.wallTextures) {
+			this.wallMaterials.push(
+				new THREE.MeshPhongMaterial({
+					color: new THREE.Color(this.colors.wall.r, this.colors.wall.g, this.colors.wall.b),
+				})
+			);
+			for (let tex of this.wallTextures) {
 				loader.load(
 					require("@/assets/textures/" + tex.path),
 					function(texture) {
@@ -323,9 +330,9 @@ export default {
 
 			// Stats
 			this.stats = new Stats();
-			this.stats.dom.style.top = 'auto';
+			this.stats.dom.style.top = "auto";
 			this.stats.dom.style.bottom = 0;
-			document.getElementById("visualizer").appendChild( this.stats.dom );
+			document.getElementById("visualizer").appendChild(this.stats.dom);
 
 			//Resize handler
 			window.addEventListener("resize", this.resizeHandler);
@@ -336,8 +343,6 @@ export default {
 			this.renderer.domElement.addEventListener("mouseup", this.onMouseup, true);
 			this.renderer.domElement.addEventListener("mouseleave", this.onMouseLeave, true);
 			this.renderer.domElement.addEventListener("touchend", this.onMouseup, true);
-			window.addEventListener("keydown", this.onKeyDown);
-			window.addEventListener("keyup", this.onKeyUp);
 
 			// Setting hover handler
 			this.mouse = new THREE.Vector2();
@@ -348,7 +353,9 @@ export default {
 		gameLoop() {
 			requestAnimationFrame(this.gameLoop);
 			if (this.controlType == "PointerLock") {
-				this.pointerLockLoop();
+				var delta = this.clock.getDelta();
+				this.animatePlayer(delta);
+				// this.pointerLockLoop(delta);
 			}
 			if (this.worldSetup) {
 				this.hoverObjectLoop();
@@ -409,29 +416,13 @@ export default {
 			}
 		},
 
-		pointerLockLoop() {
-			var time = performance.now();
-			var delta = (time - this.pointerLock.prevTime) / 1000;
+		animatePlayer(delta) {
+			let playerSpeed = 300;
+			// Gradual slowdown
+			this.pointerLock.velocity.x -= this.pointerLock.velocity.x * 10.0 * delta;
+			this.pointerLock.velocity.z -= this.pointerLock.velocity.z * 10.0 * delta;
 
-			var cameraDirection = this.controls.getDirection(new THREE.Vector3(0, 0, 0)).clone();
-			let raycaster = new THREE.Raycaster(this.controls.getObject().position, cameraDirection);
-			// this.raycaster.ray.origin.copy(this.controls.getObject().position);
-			// this.raycaster.ray.origin.y -= this.cameraY;
-
-			let collisionDistance = 5;
-			let intersections = raycaster.intersectObjects( this.collidableObjects );
-
-			if(intersections.length > 0 && intersections[0].distance < collisionDistance) {
-				this.pointerLock.velocity.x = 0;
-				this.pointerLock.velocity.z = 0;
-				console.log(intersections[0].distance)
-			} else {
-				
-				this.pointerLock.velocity.x -= this.pointerLock.velocity.x * 10.0 * delta;
-				this.pointerLock.velocity.z -= this.pointerLock.velocity.z * 10.0 * delta;
-	
-				this.pointerLock.velocity.y -= 9.8 * 80.0 * delta; // 80.0 = mass
-	
+			if (this.detectPlayerCollision() == false) {
 				this.pointerLock.direction.z =
 					Number(this.pointerLock.moveForward) - Number(this.pointerLock.moveBackward);
 				this.pointerLock.direction.x =
@@ -439,49 +430,87 @@ export default {
 				this.pointerLock.direction.normalize(); // this ensures consistent movements in all directions
 	
 				if (this.pointerLock.moveForward || this.pointerLock.moveBackward)
-					this.pointerLock.velocity.z -= this.pointerLock.direction.z * 400.0 * delta;
+					this.pointerLock.velocity.z -= this.pointerLock.direction.z * playerSpeed * delta;
 				if (this.pointerLock.moveLeft || this.pointerLock.moveRight)
-					this.pointerLock.velocity.x -= this.pointerLock.direction.x * 400.0 * delta;
+					this.pointerLock.velocity.x -= this.pointerLock.direction.x * playerSpeed * delta;
 	
 				this.controls.moveRight(-this.pointerLock.velocity.x * delta);
 				this.controls.moveForward(-this.pointerLock.velocity.z * delta);
-	
-				this.controls.getObject().position.y += this.pointerLock.velocity.y * delta; // new behavior
+			} else {
+				this.pointerLock.velocity.x = 0;
+				this.pointerLock.velocity.z = 0;
 			}
+
+			this.pointerLock.velocity.y -= 9.8 * 80.0 * delta; // 80.0 = mass
+			if(this.detectOnObject()) {
+				this.pointerLock.velocity.y = Math.max(0, this.pointerLock.velocity.y);
+				this.pointerLock.canJump = true;
+			}
+			this.controls.getObject().position.y += this.pointerLock.velocity.y * delta;
 
 			if (this.controls.getObject().position.y < this.cameraY) {
 				this.pointerLock.velocity.y = 0;
 				this.controls.getObject().position.y = this.cameraY;
 				this.pointerLock.canJump = true;
 			}
-
-			this.pointerLock.prevTime = time;
 		},
 
-		animatePlayer(delta) {
-			// Gradual slowdown
-			playerVelocity.x -= playerVelocity.x * 10.0 * delta;
-			playerVelocity.z -= playerVelocity.z * 10.0 * delta;
+		detectPlayerCollision() {
+			// The rotation matrix to apply to our direction vector
+			// Undefined by default to indicate ray should coming from front
+			let rotationMatrix;
+			// Get direction of camera
+			let cameraDirection = this.controls.getDirection(new THREE.Vector3(0, 0, 0)).clone();
+			let collisionDistance = 4;
 
-			if (moveForward) {
-				playerVelocity.z -= PLAYERSPEED * delta;
-			} 
-			if (moveBackward) {
-				playerVelocity.z += PLAYERSPEED * delta;
-			} 
-			if (moveLeft) {
-				playerVelocity.x -= PLAYERSPEED * delta;
-			} 
-			if (moveRight) {
-				playerVelocity.x += PLAYERSPEED * delta;
+			// Check which direction we're moving (not looking)
+			// Flip matrix to that direction so that we can reposition the ray
+			if (this.pointerLock.moveBackward) {
+				rotationMatrix = new THREE.Matrix4();
+				rotationMatrix.makeRotationY(this.degreesToRadians(180));
+			} else if (this.pointerLock.moveLeft) {
+				rotationMatrix = new THREE.Matrix4();
+				rotationMatrix.makeRotationY(this.degreesToRadians(90));
+			} else if (this.pointerLock.moveRight) {
+				rotationMatrix = new THREE.Matrix4();
+				rotationMatrix.makeRotationY(this.degreesToRadians(270));
 			}
-			if( !( moveForward || moveBackward || moveLeft ||moveRight)) {
-				// No movement key being pressed. Stop movememnt
-				playerVelocity.x = 0;
-				playerVelocity.z = 0;
+
+			// Player is not moving forward, apply rotation matrix needed
+			if (rotationMatrix !== undefined) {
+				cameraDirection.applyMatrix4(rotationMatrix);
 			}
-			controls.getObject().translateX(playerVelocity.x * delta);
-			controls.getObject().translateZ(playerVelocity.z * delta);
+
+			// Apply ray to player camera
+			let rayCaster = new THREE.Raycaster(this.controls.getObject().position, cameraDirection);
+
+			// If our ray hit a collidable object, return true
+			if (this.rayIntersect(rayCaster, collisionDistance)) {
+				return true;
+			} else {
+				return false;
+			}
+		},
+
+		detectOnObject() {
+			let collisionDistance = 4;
+			let rayCaster = new THREE.Raycaster(this.controls.getObject().position, new THREE.Vector3(0, -1, 0));
+			if (this.rayIntersect(rayCaster, collisionDistance)) {
+				return true;
+			} else {
+				return false;
+			}
+		},
+
+		rayIntersect(ray, distance) {
+			var intersects = ray.intersectObjects(this.collidableObjects);
+			for (var i = 0; i < intersects.length; i++) {
+				// Check if there's a collision
+				if (intersects[i].distance < distance) {
+					return true;
+				}
+			}
+			return false;
 		},
 
 		addControls() {
@@ -493,6 +522,8 @@ export default {
 			this.pointerLockControls.addEventListener("unlock", function() {
 				console.log("Pointer Unlocked");
 			});
+			// Clock
+			this.clock = new THREE.Clock();
 			document.addEventListener("keydown", this.onKeyDown, false);
 			document.addEventListener("keyup", this.onKeyUp, false);
 			this.pointerLock.velocity = new THREE.Vector3();
@@ -510,19 +541,21 @@ export default {
 				this.controls.enabled = true;
 				setTimeout(() => {
 					vm.resetCamera();
-				}, 0)
+				}, 0);
 			} else if (this.controlType == "PointerLock") {
 				// PointerLock controls
 				this.cameraY = 2;
 				this.controls.enabled = false;
 				this.controls = this.pointerLockControls;
-				let startPosition = this.ground.geometry.vertices[this.grid[this.start.row][this.start.col].faces[1]["a"]];
+				let startPosition = this.ground.geometry.vertices[
+					this.grid[this.start.row][this.start.col].faces[1]["a"]
+				];
 				new TWEEN.Tween(this.camera.position)
 					.to(startPosition, 2000)
 					.easing(TWEEN.Easing.Exponential.Out)
 					.start();
 				new TWEEN.Tween(this.camera.rotation)
-					.to({ x: 0, y: 5*Math.PI/4, z: 0 }, 2000)
+					.to({ x: 0, y: (5 * Math.PI) / 4, z: 0 }, 2000)
 					.easing(TWEEN.Easing.Exponential.Out)
 					.start();
 			}
@@ -537,12 +570,14 @@ export default {
 				})
 				.onComplete(() => {
 					let lookDirection = new THREE.Vector3();
-					this.camera.getWorldDirection( lookDirection );
-					this.controls.target.copy( this.camera.position ).add( lookDirection.multiplyScalar( this.cameraY ) );
+					this.camera.getWorldDirection(lookDirection);
+					this.controls.target
+						.copy(this.camera.position)
+						.add(lookDirection.multiplyScalar(this.cameraY));
 				})
 				.start();
 			new TWEEN.Tween(this.camera.rotation)
-				.to({ x: -Math.PI/2, y: 0, z: 0 }, 2000)
+				.to({ x: -Math.PI / 2, y: 0, z: 0 }, 2000)
 				.easing(TWEEN.Easing.Exponential.Out)
 				.start();
 		},
@@ -645,7 +680,7 @@ export default {
 		},
 
 		addWall(node) {
-			let materialId = 1 + Math.floor(Math.random()*(this.wallMaterials.length-1));
+			let materialId = 1 + Math.floor(Math.random() * (this.wallMaterials.length - 1));
 			let scaleY = 0.5 + Math.random();
 
 			let wall = new THREE.Mesh(this.wallGeomtery, this.wallMaterials[materialId]);
@@ -676,7 +711,7 @@ export default {
 			wall.visible = true;
 			wall.position.setY(height);
 			new TWEEN.Tween(wall.position)
-				.to({ y: height/2 }, 1000)
+				.to({ y: height / 2 }, 1000)
 				.easing(TWEEN.Easing.Bounce.Out)
 				.start();
 		},
@@ -765,6 +800,10 @@ export default {
 			}
 		},
 
+		degreesToRadians(degrees) {
+			return degrees * Math.PI/180;
+		},
+
 		faceIndexToCoordinates(faceIndex) {
 			// As each node has 2 faces
 			return {
@@ -774,7 +813,7 @@ export default {
 		},
 
 		clearFocus() {
-			document.getElementsByClassName('header')[0].click();
+			document.getElementsByClassName("header")[0].click();
 		},
 
 		onKeyDown(event) {
@@ -806,7 +845,7 @@ export default {
 						this.pointerLock.moveRight = true;
 						break;
 					case 32: // space
-						if (this.pointerLock.canJump === true) this.pointerLock.velocity.y += 350;
+						if (this.pointerLock.canJump === true) this.pointerLock.velocity.y += 300;
 						this.pointerLock.canJump = false;
 						break;
 				}
