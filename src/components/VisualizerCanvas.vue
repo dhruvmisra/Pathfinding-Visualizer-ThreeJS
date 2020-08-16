@@ -398,7 +398,7 @@ export default {
 						}
 						this.grid[coords.row][coords.col].status = end;
 						this.$emit("updateEnds", obj);
-					} else if (!this.selectedAlgorithm.type == 'unweighted' && (!this.intersectedNode || !ends.includes(this.intersectedNode.status))) {
+					} else if (this.selectedAlgorithm.type != 'unweighted' && (!this.intersectedNode || !ends.includes(this.intersectedNode.status))) {
 						this.grid[coords.row][coords.col].status =
 							this.grid[coords.row][coords.col].status == "wall" ? "default" : "wall";
 					}
