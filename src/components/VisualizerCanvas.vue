@@ -46,6 +46,7 @@ export default {
 		"colors",
 		"controlType",
 		"worldSetup",
+		"selectedAlgorithm"
 	],
 	data: () => ({
 		scene: null,
@@ -80,7 +81,7 @@ export default {
 			},
 			{
 				path: "building2.png",
-				repeatY: 1,
+				repeatY: 2,
 			},
 			{
 				path: "building4.png",
@@ -123,7 +124,7 @@ export default {
 		worldSetup: function(newVal, oldVal) {
 			if (newVal) {
 				new TWEEN.Tween(this.camera.position)
-					.to({ x: 0, y: this.cameraY - 10, z: 0 }, 500)
+					.to({ x: 0, y: this.cameraY - 30, z: 0 }, 500)
 					.easing(TWEEN.Easing.Exponential.Out)
 					.onUpdate(() => {
 						this.camera.lookAt(this.scene.position);
@@ -134,7 +135,7 @@ export default {
 						this.camera.getWorldDirection(lookDirection);
 						this.controls.target
 							.copy(this.camera.position)
-							.add(lookDirection.multiplyScalar(this.cameraY - 10));
+							.add(lookDirection.multiplyScalar(this.cameraY - 30));
 					})
 					.start();
 				new TWEEN.Tween(this.camera.rotation)
@@ -199,7 +200,7 @@ export default {
 			groundGeometry.rotateX(-Math.PI / 2);
 			let loader = new THREE.TextureLoader();
 			loader.load(
-				require("@/assets/textures/ground-bricks.png"),
+				require("@/assets/textures/ground.png"),
 				function(texture) {
 					texture.wrapS = THREE.RepeatWrapping;
 					texture.wrapT = THREE.RepeatWrapping;
@@ -212,7 +213,7 @@ export default {
 					});
 					vm.ground = new THREE.Mesh(groundGeometry, groundMaterial);
 					vm.ground.receiveShadow = true;
-					vm.ground.position.y = 0.01;
+					vm.ground.position.y = 0.02;
 					vm.scene.add(vm.ground);
 					vm.initGrid();
 					vm.$emit("groundInitialized", vm.ground);
@@ -226,7 +227,7 @@ export default {
 			fakeGroundGeometry.rotateX(-Math.PI / 2);
 			var fakeGroundMaterial = new THREE.MeshLambertMaterial({
 				// color: 0x87775d,
-				color: 0xb1b5cc,
+				color: 0xBBC2D0,
 				side: THREE.FrontSide,
 			});
 			let fakeGround = new THREE.Mesh(fakeGroundGeometry, fakeGroundMaterial);
@@ -235,8 +236,8 @@ export default {
 			//Grid helper
 			var size = this.cols * this.nodeDimensions.height;
 			var divisions = this.cols;
-			var gridHelper = new THREE.GridHelper(size, divisions, 0x636b4c, 0x636b4c);
-			gridHelper.position.y = 0.02;
+			var gridHelper = new THREE.GridHelper(size, divisions, 0x6F7689, 0x6F7689);
+			gridHelper.position.y = 0.035;
 			this.scene.add(gridHelper);
 
 			// Wall
@@ -301,11 +302,6 @@ export default {
 			this.directionalLight.shadow.camera.bottom = -d;
 			this.directionalLight.shadow.camera.far = 350;
 
-			// let dirLightHeper = new THREE.DirectionalLightHelper( this.directionalLight, 10 );
-			// this.scene.add( dirLightHeper );
-			// var shadowHelper = new THREE.CameraHelper( this.directionalLight.shadow.camera );
-			// this.scene.add(shadowHelper)
-
 			// SKYDOME
 			var vertexShader = document.getElementById("vertexShader").textContent;
 			var fragmentShader = document.getElementById("fragmentShader").textContent;
@@ -355,7 +351,6 @@ export default {
 			if (this.controlType == "PointerLock") {
 				var delta = this.clock.getDelta();
 				this.animatePlayer(delta);
-				// this.pointerLockLoop(delta);
 			}
 			if (this.worldSetup) {
 				this.hoverObjectLoop();
@@ -403,10 +398,7 @@ export default {
 						}
 						this.grid[coords.row][coords.col].status = end;
 						this.$emit("updateEnds", obj);
-					} else if (!this.intersectedNode || !ends.includes(this.intersectedNode.status)) {
-						// if (this.intersectedNode) {
-						// 	this.intersectedNode.status = "default";
-						// }
+					} else if (!this.selectedAlgorithm.type == 'unweighted' && (!this.intersectedNode || !ends.includes(this.intersectedNode.status))) {
 						this.grid[coords.row][coords.col].status =
 							this.grid[coords.row][coords.col].status == "wall" ? "default" : "wall";
 					}
@@ -441,7 +433,7 @@ export default {
 				this.pointerLock.velocity.z = 0;
 			}
 
-			this.pointerLock.velocity.y -= 9.8 * 80.0 * delta; // 80.0 = mass
+			this.pointerLock.velocity.y -= 9.8 * 70.0 * delta; // 70.0 = mass
 			if(this.detectOnObject()) {
 				this.pointerLock.velocity.y = Math.max(0, this.pointerLock.velocity.y);
 				this.pointerLock.canJump = true;
@@ -461,10 +453,11 @@ export default {
 			let rotationMatrix;
 			// Get direction of camera
 			let cameraDirection = this.controls.getDirection(new THREE.Vector3(0, 0, 0)).clone();
-			let collisionDistance = 4;
+			let collisionDistance = 5;
 
 			// Check which direction we're moving (not looking)
 			// Flip matrix to that direction so that we can reposition the ray
+			console.log(this.controls.getObject().rotation.x, this.controls.getObject().rotation.y, this.controls.getObject().rotation.z)
 			if (this.pointerLock.moveBackward) {
 				rotationMatrix = new THREE.Matrix4();
 				rotationMatrix.makeRotationY(this.degreesToRadians(180));
@@ -475,6 +468,12 @@ export default {
 				rotationMatrix = new THREE.Matrix4();
 				rotationMatrix.makeRotationY(this.degreesToRadians(270));
 			}
+
+
+			// if (rotationMatrix == undefined) {
+			// 	rotationMatrix = new THREE.Matrix4();
+			// }
+			// rotationMatrix.makeRotationX(this.controls.getObject().rotation.x);
 
 			// Player is not moving forward, apply rotation matrix needed
 			if (rotationMatrix !== undefined) {
@@ -493,8 +492,9 @@ export default {
 		},
 
 		detectOnObject() {
-			let collisionDistance = 4;
+			let collisionDistance = 5;
 			let rayCaster = new THREE.Raycaster(this.controls.getObject().position, new THREE.Vector3(0, -1, 0));
+			// rayCaster.ray.origin.y -= this.cameraY;
 			if (this.rayIntersect(rayCaster, collisionDistance)) {
 				return true;
 			} else {

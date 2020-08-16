@@ -12,6 +12,7 @@
 			:colors="colors"
 			:controlType="controlType"
 			:worldSetup="worldSetup"
+			:selectedAlgorithm="selectedAlgorithm"
 			@clickEvent="onClick"
 			@groundInitialized="ground = $event"
 			@updateEnds="updateEnds"
@@ -314,6 +315,9 @@ export default {
 					);
 				}
 				console.log("success:", success);
+				if(success == false) {
+					this.visualizerState = "finished";
+				}
 				const nodesInShortestPathOrder = getNodesInShortestPathOrder(finishNode);
 				this.$nextTick(() => {
 					this.animateAlgorithm(nodesToAnimate, nodesInShortestPathOrder, timerDelay);
@@ -360,7 +364,7 @@ export default {
 						position: false,
 					});
 					if (i == nodesInShortestPathOrder.length - 1) {
-						vm.visualizerState = "finished";
+						vm.visualizerState = "clear";
 					}
 				}, timerDelay * i);
 			}
