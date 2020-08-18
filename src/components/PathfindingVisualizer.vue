@@ -15,6 +15,8 @@
 			:selectedAlgorithm="selectedAlgorithm"
 			@clickEvent="onClick"
 			@groundInitialized="ground = $event"
+			@switchWorldSetup="worldSetup = !worldSetup"
+			@switchControlType="controlType = (controlType == 'Orbit') ? 'PointerLock' : 'Orbit'"
 			@updateEnds="updateEnds"
 		/>
 		<div class="header-container">

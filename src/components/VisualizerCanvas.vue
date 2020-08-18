@@ -52,7 +52,7 @@ export default {
 		scene: null,
 		camera: null,
 		cameraY: 0,
-		defaultCameraY: 350,
+		defaultCameraY: 250,
 		renderer: null,
 		pointerLock: {
 			moveForward: false,
@@ -123,6 +123,7 @@ export default {
 		},
 		worldSetup: function(newVal, oldVal) {
 			if (newVal) {
+				TWEEN.removeAll();
 				new TWEEN.Tween(this.camera.position)
 					.to({ x: 0, y: this.cameraY - 30, z: 0 }, 500)
 					.easing(TWEEN.Easing.Exponential.Out)
@@ -168,10 +169,10 @@ export default {
 			//Scene
 			this.scene = new THREE.Scene();
 			this.scene.background = new THREE.Color(0xbbd6ff);
-			this.scene.fog = new THREE.Fog(0xffffff, 0, 1000);
+			this.scene.fog = new THREE.Fog(0xffffff, 0, 750);
 
 			//Camera
-			this.camera = new THREE.PerspectiveCamera(45, width / height, 1, 10000);
+			this.camera = new THREE.PerspectiveCamera(60, width / height, 1, 5000);
 			this.camera.position.y = this.cameraY + 2000;
 			this.camera.position.x = -500;
 			this.camera.position.z = 500;
@@ -344,6 +345,7 @@ export default {
 			this.mouse = new THREE.Vector2();
 
 			this.gameLoop();
+			console.log('init() finished');
 		},
 
 		gameLoop() {
@@ -433,7 +435,7 @@ export default {
 				this.pointerLock.velocity.z = 0;
 			}
 
-			this.pointerLock.velocity.y -= 9.8 * 70.0 * delta; // 70.0 = mass
+			this.pointerLock.velocity.y -= 9.8 * 50.0 * delta; // 50.0 = mass
 			if(this.detectOnObject()) {
 				this.pointerLock.velocity.y = Math.max(0, this.pointerLock.velocity.y);
 				this.pointerLock.canJump = true;
@@ -453,11 +455,10 @@ export default {
 			let rotationMatrix;
 			// Get direction of camera
 			let cameraDirection = this.controls.getDirection(new THREE.Vector3(0, 0, 0)).clone();
-			let collisionDistance = 5;
+			let collisionDistance = 1;
 
 			// Check which direction we're moving (not looking)
 			// Flip matrix to that direction so that we can reposition the ray
-			console.log(this.controls.getObject().rotation.x, this.controls.getObject().rotation.y, this.controls.getObject().rotation.z)
 			if (this.pointerLock.moveBackward) {
 				rotationMatrix = new THREE.Matrix4();
 				rotationMatrix.makeRotationY(this.degreesToRadians(180));
@@ -492,7 +493,7 @@ export default {
 		},
 
 		detectOnObject() {
-			let collisionDistance = 5;
+			let collisionDistance = this.cameraY+1;
 			let rayCaster = new THREE.Raycaster(this.controls.getObject().position, new THREE.Vector3(0, -1, 0));
 			// rayCaster.ray.origin.y -= this.cameraY;
 			if (this.rayIntersect(rayCaster, collisionDistance)) {
@@ -537,14 +538,18 @@ export default {
 			if (this.controlType == "Orbit") {
 				// OrbitControls
 				this.cameraY = this.defaultCameraY;
+				this.camera.near = 1;
+				this.camera.updateProjectionMatrix();
 				this.controls = this.orbitControls;
 				this.controls.enabled = true;
 				setTimeout(() => {
 					vm.resetCamera();
-				}, 0);
+				}, 200);
 			} else if (this.controlType == "PointerLock") {
 				// PointerLock controls
-				this.cameraY = 2;
+				this.cameraY = 3;
+				this.camera.near = 0.05;
+				this.camera.updateProjectionMatrix();
 				this.controls.enabled = false;
 				this.controls = this.pointerLockControls;
 				let startPosition = this.ground.geometry.vertices[
@@ -562,6 +567,7 @@ export default {
 		},
 
 		resetCamera() {
+			console.log('resetCamera() called');
 			new TWEEN.Tween(this.camera.position)
 				.to({ x: 0, y: this.cameraY, z: 0 }, 2000)
 				.easing(TWEEN.Easing.Exponential.Out)
@@ -825,6 +831,12 @@ export default {
 					case 68:
 						this.directionalLight.visible = !this.directionalLight.visible;
 						break;
+					case 87: // w
+						this.$emit('switchWorldSetup');
+						break;
+					case 80: // 
+						this.$emit('switchControlType');
+						break;
 				}
 			} else {
 				switch (event.keyCode) {
@@ -845,8 +857,13 @@ export default {
 						this.pointerLock.moveRight = true;
 						break;
 					case 32: // space
-						if (this.pointerLock.canJump === true) this.pointerLock.velocity.y += 300;
+						if (this.pointerLock.canJump === true) this.pointerLock.velocity.y += 200;
 						this.pointerLock.canJump = false;
+						break;
+					case 80: // P
+						if(!this.controls.isLocked) {
+							this.$emit('switchControlType');
+						}
 						break;
 				}
 			}
