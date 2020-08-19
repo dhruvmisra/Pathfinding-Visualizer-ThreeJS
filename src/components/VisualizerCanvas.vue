@@ -188,7 +188,7 @@ export default {
 
 			// Controls
 			this.addControls();
-			this.setControls();
+			this.setControls(true);
 
 			// Raycaster
 			this.raycaster = new THREE.Raycaster();
@@ -328,7 +328,8 @@ export default {
 			// Stats
 			this.stats = new Stats();
 			this.stats.dom.style.top = "auto";
-			this.stats.dom.style.bottom = 0;
+			this.stats.dom.style.bottom = '5px';
+			this.stats.dom.style.left = '3px';
 			document.getElementById("visualizer").appendChild(this.stats.dom);
 
 			//Resize handler
@@ -345,7 +346,6 @@ export default {
 			this.mouse = new THREE.Vector2();
 
 			this.gameLoop();
-			console.log('init() finished');
 		},
 
 		gameLoop() {
@@ -532,7 +532,7 @@ export default {
 			this.scene.add(this.pointerLockControls.getObject());
 		},
 
-		setControls() {
+		setControls(fromInit = false) {
 			let vm = this;
 			TWEEN.removeAll();
 			if (this.controlType == "Orbit") {
@@ -544,7 +544,7 @@ export default {
 				this.controls.enabled = true;
 				setTimeout(() => {
 					vm.resetCamera();
-				}, 200);
+				}, fromInit ? 800 : 0);
 			} else if (this.controlType == "PointerLock") {
 				// PointerLock controls
 				this.cameraY = 3;
@@ -567,7 +567,6 @@ export default {
 		},
 
 		resetCamera() {
-			console.log('resetCamera() called');
 			new TWEEN.Tween(this.camera.position)
 				.to({ x: 0, y: this.cameraY, z: 0 }, 2000)
 				.easing(TWEEN.Easing.Exponential.Out)
@@ -825,16 +824,16 @@ export default {
 		onKeyDown(event) {
 			if (this.controlType == "Orbit") {
 				switch (event.keyCode) {
-					case 72:
-						this.hemisphereLight.visible = !this.hemisphereLight.visible;
-						break;
-					case 68:
-						this.directionalLight.visible = !this.directionalLight.visible;
-						break;
+					// case 72:  // h
+					// 	this.hemisphereLight.visible = !this.hemisphereLight.visible;
+					// 	break;
+					// case 68: // d
+					// 	this.directionalLight.visible = !this.directionalLight.visible;
+					// 	break;
 					case 87: // w
 						this.$emit('switchWorldSetup');
 						break;
-					case 80: // 
+					case 80: // p
 						this.$emit('switchControlType');
 						break;
 				}

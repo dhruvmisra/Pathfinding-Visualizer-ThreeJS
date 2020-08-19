@@ -1,7 +1,9 @@
 import Vue from 'vue'
 import App from './App.vue'
 import './registerServiceWorker'
-import 'bootstrap'; import 'bootstrap/dist/css/bootstrap.min.css';
+import AppButton from '@/components/UI/AppButton.vue';
+
+Vue.component('Button', AppButton);
 
 Vue.config.productionTip = false
 

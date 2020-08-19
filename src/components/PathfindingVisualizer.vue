@@ -16,63 +16,67 @@
 			@clickEvent="onClick"
 			@groundInitialized="ground = $event"
 			@switchWorldSetup="worldSetup = !worldSetup"
-			@switchControlType="controlType = (controlType == 'Orbit') ? 'PointerLock' : 'Orbit'"
+			@switchControlType="controlType = controlType == 'Orbit' ? 'PointerLock' : 'Orbit'"
 			@updateEnds="updateEnds"
 		/>
-		<div class="header-container">
-			<transition-group name="slide" mode="out-in" tag="div" class="header py-1">
-				<select
-					class="form-select m-1"
-					id="algorithms"
-					v-model="selectedAlgorithm"
-					:disabled="visualizerState == 'running'"
-					key="algo-select"
-					v-if="!worldSetup"
-				>
-					<option :value="algo" v-for="algo in algorithms" :key="algo.algorithm">{{
-						algo.displayName
-					}}</option>
-				</select>
-				<button
-					class="btn btn-primary m-1"
-					@click="visualizeAlgorithm()"
-					:disabled="visualizerState == 'running' || worldSetup"
-					key="visualize"
-					v-if="!worldSetup"
-				>
-					<img src="@/assets/icons/path.svg" alt="" />
-					<span>Visualize {{ selectedAlgorithm.displayName }}!</span>
-				</button>
-				<button class="btn btn-danger m-1" @click="clearPath" key="clear-path">
-					<img src="@/assets/icons/clear-path.svg" alt="" />
-					<span>Clear path</span>
-				</button>
-				<button class="btn btn-danger m-1" @click="clearWalls" key="clear-walls">
-					<img src="@/assets/icons/clear-wall.svg" alt="" />
-					<span>Clear walls</span>
-				</button>
-				<button class="btn btn-info m-1" @click="generateMaze(mazeAlgorithms[0])" key="maze-0">
-					<span>{{ mazeAlgorithms[0] }}</span>
-				</button>
-				<button class="btn btn-info m-1" @click="generateMaze(mazeAlgorithms[1])" key="maze-1">
-					<span>{{ mazeAlgorithms[1] }}</span>
-				</button>
-				<select
-					class="form-select m-1"
-					id="algorithms"
-					v-model="selectedSpeed"
-					:disabled="visualizerState == 'running'"
-					key="speed-select"
-					v-if="!worldSetup"
-				>
-					<option :value="speed" v-for="speed in speeds" :key="speed.text">{{
-						speed.text
-					}}</option>
-				</select>
-			</transition-group>
-		</div>
-		<button
-			class="btn btn-success btn-hover btn-setup m-1"
+		<transition-group name="slide" mode="out-in" tag="div" class="header py-1">
+			<select
+				id="algorithms"
+				v-model="selectedAlgorithm"
+				:disabled="visualizerState == 'running'"
+				key="algo-select"
+				v-if="!worldSetup"
+			>
+				<option :value="algo" v-for="algo in algorithms" :key="algo.algorithm">{{
+					algo.displayName
+				}}</option>
+			</select>
+			<Button
+				class="accent"
+				@click="visualizeAlgorithm()"
+				:disabled="visualizerState == 'running' || worldSetup"
+				key="visualize"
+				v-if="!worldSetup"
+			>
+				<!-- <img src="@/assets/icons/path.svg" alt="" /> -->
+				<span>Visualize!</span>
+			</Button>
+			<Button class="danger" @click="clearPath" key="clear-path">
+				<!-- <img src="@/assets/icons/clear-path.svg" alt="" /> -->
+				<span>Clear path</span>
+			</Button>
+			<Button class="danger" @click="clearWalls" key="clear-walls">
+				<!-- <img src="@/assets/icons/clear-wall.svg" alt="" /> -->
+				<span>Clear walls</span>
+			</Button>
+			<div class="maze-dropdown" key="maze-select">
+				<Button class="info btn-maze" @click="dropdownOpen = !dropdownOpen">
+					<!-- <img src="@/assets/icons/maze.svg" alt="" /> -->
+					<span>Maze Algorithms</span>
+				</Button>
+				<div class="dropdown" v-if="dropdownOpen">
+					<div
+						class="dropdown-item"
+						v-for="algo in mazeAlgorithms"
+						:key="algo"
+						@click="generateMaze(algo)"
+					>
+						{{ algo }}
+					</div>
+				</div>
+			</div>
+			<select
+				id="algorithms"
+				v-model="selectedSpeed"
+				:disabled="visualizerState == 'running'"
+				key="speed-select"
+				v-if="!worldSetup"
+			>
+				<option :value="speed" v-for="speed in speeds" :key="speed.text">{{ speed.text }}</option>
+			</select>
+		</transition-group>
+		<Button
+			class="btn hover btn-setup warning"
 			:class="{ setup: worldSetup }"
 			key="setup"
 			v-if="controlType != 'PointerLock'"
@@ -80,22 +84,34 @@
 		>
 			<img src="@/assets/icons/setup.svg" alt="" />
 			<span>{{ worldSetup ? "Complete Setup" : "Setup World" }}</span>
-		</button>
-		<button
-			class="btn btn-warning btn-hover btn-camera m-1"
-			key="switch-camera"
+		</Button>
+		<Button
+			class="btn hover btn-controls warning"
+			key="switch-controls"
 			v-if="!worldSetup"
 			@click="switchControl"
 		>
 			<img src="@/assets/icons/street-view.svg" alt="" v-if="controlType == 'Orbit'" />
 			<img src="@/assets/icons/perspective.svg" alt="" v-else />
 			<span>{{ controlType == "Orbit" ? "First-person" : "Perspective" }}</span>
-		</button>
+		</Button>
+		<Button
+			class="btn hover btn-camera warning"
+			key="reset-camera"
+			v-if="controlType == 'Orbit'"
+			@click="$refs.visualizer.resetCamera()"
+		>
+			<img src="@/assets/icons/reset-camera.svg" alt="" />
+			<span>Reset Camera</span>
+		</Button>
+
+		<Info></Info>
 	</div>
 </template>
 
 <script>
 import VisualizerCanvas from "./VisualizerCanvas.vue";
+import Info from '@/components/UI/Info.vue';
 import * as THREE from "three";
 import TWEEN from "@tweenjs/tween.js";
 
@@ -104,9 +120,11 @@ import { weightedSearchAlgorithm } from "./algorithms/weightedSearchAlgorithm.js
 import { unweightedSearchAlgorithm } from "./algorithms/unweightedSearchAlgorithm.js";
 import { randomMaze, recursiveDivisionMaze } from "./algorithms/mazeAlgorithms.js";
 
+
 export default {
 	components: {
 		VisualizerCanvas,
+		Info
 	},
 	data: () => ({
 		visualizerState: "clear", // clear/running/finished
@@ -115,6 +133,10 @@ export default {
 				algorithm: "dijkstra",
 				displayName: "Dijkstra's Algorithm",
 				type: "weighted",
+				info: {
+					heading: "Dijkstra's Algorithm",
+					text: ""
+				}
 			},
 			{
 				algorithm: "astar",
@@ -152,10 +174,8 @@ export default {
 			},
 		],
 		selectedSpeed: null,
-		mazeAlgorithms: [
-			"Random Maze",
-			"Recursive Division",
-		],
+		mazeAlgorithms: ["Random Maze", "Recursive Division"],
+		dropdownOpen: false,
 		nodeDimensions: {
 			height: 8,
 			width: 8,
@@ -181,6 +201,11 @@ export default {
 			wall: { r: 0.109, g: 0.109, b: 0.45 },
 			visited: { r: 0.27, g: 0.878, b: 0.968 },
 			path: { r: 1, g: 1, b: 0 },
+		},
+		infoStatus: '',
+		infoObject: {
+			heading: "",
+			text: ""
 		}
 	}),
 	watch: {
@@ -188,7 +213,7 @@ export default {
 			if (newVal.type == "unweighted") {
 				this.clearWalls();
 			}
-		}
+		},
 	},
 	created() {
 		this.selectedAlgorithm = this.algorithms[0];
@@ -262,29 +287,21 @@ export default {
 
 		moveCamera() {
 			this.$refs.visualizer.controls.enabled = false;
-			let startQuaternion = this.$refs.visualizer.camera.quaternion.clone();
-			// let endQuaternion = new THREE.Quaternion().set(-0.4247082002778669, -0.33985114297998736, -0.17591989660616114, 0.8204732385702832);
-			let endQuaternion = new THREE.Quaternion().setFromAxisAngle(
-				new THREE.Vector3(-1, 1, 1),
-				Math.PI / 10
-			);
-			let time = { t: 0 };
-			new TWEEN.Tween(time)
-				.to({ t: 1 }, 3000)
-				// .easing(TWEEN.Easing.Quadratic.InOut)
+			new TWEEN.Tween(this.$refs.visualizer.camera.position)
+				.to({ x: -100, y: 200, z: 100 }, 2000)
+				.easing(TWEEN.Easing.Exponential.Out)
 				.onUpdate(() => {
-					THREE.Quaternion.slerp(
-						startQuaternion,
-						endQuaternion,
-						this.$refs.visualizer.camera.quaternion,
-						time.t
-					);
-				})
-				.onComplete(() => {
-					// this.$refs.visualizer.controls.enabled = true;
+					this.$refs.visualizer.camera.lookAt(this.$refs.visualizer.scene.position);
 					// this.$refs.visualizer.controls.update();
 				})
+				.onComplete(() => {
+					this.$refs.visualizer.controls.enabled = true;
+				})
 				.start();
+			// new TWEEN.Tween(this.$refs.visualizer.camera.rotation)
+			// 	.to({ x: -(Math.PI/3), y: -(Math.PI/8), z: 0 }, 2000)
+			// 	.easing(TWEEN.Easing.Exponential.Out)
+			// 	.start();
 		},
 
 		visualizeAlgorithm() {
@@ -317,8 +334,9 @@ export default {
 					);
 				}
 				console.log("success:", success);
-				if(success == false) {
+				if (success == false) {
 					this.visualizerState = "finished";
+					return;
 				}
 				const nodesInShortestPathOrder = getNodesInShortestPathOrder(finishNode);
 				this.$nextTick(() => {
@@ -373,12 +391,23 @@ export default {
 		},
 
 		generateMaze(algo) {
+			this.dropdownOpen = false;
 			this.clearWalls();
 			let nodesToAnimate = [];
-			if(algo == "Random Maze") {
+			if (algo == "Random Maze") {
 				randomMaze(this.grid, nodesToAnimate, "wall");
 			} else {
-				recursiveDivisionMaze(this.grid, 2, this.grid.length - 3, 2, this.grid[0].length - 3, "horizontal", false, nodesToAnimate, "wall");
+				recursiveDivisionMaze(
+					this.grid,
+					2,
+					this.grid.length - 3,
+					2,
+					this.grid[0].length - 3,
+					"horizontal",
+					false,
+					nodesToAnimate,
+					"wall"
+				);
 			}
 			this.animateMaze(nodesToAnimate, "wall", 30);
 		},
@@ -393,112 +422,107 @@ export default {
 		},
 
 		clearFocus() {
-			document.getElementsByClassName('header')[0].click();
+			document.getElementsByClassName("header")[0].click();
 		},
 	},
 };
 </script>
 
 <style lang="scss">
+@import '@/scss/variables.scss';
+
 .pathfinding-visualizer {
 	width: 100vw;
 	height: 100vh;
 	overflow: hidden;
 
-	.header-container {
+	.header {
 		position: absolute;
 		top: 0;
 		left: 0;
 		width: 100%;
-		background: transparent;
-		overflow: auto;
+		display: flex;
+		align-items: center;
 		transition: all 500ms ease-out;
+		z-index: 1;
 
-		&.setup {
-			background: rgba(0, 190, 0, 0.336);
+		&::before {
+			content: '';
+			position: absolute;
+			top: -100%;
+			left: 0;
+			height: 100%;
+			width: 100%;
+			box-shadow: 1px 10px 50px rgba(0, 0, 0, 1);
+			z-index: -1;
 		}
 
-		.header {
-			width: 100%;
-			display: flex;
-			align-items: center;
-
-			select {
-				font-size: 0.9em;
-				width: fit-content;
-			}
+		select {
+			height: 40px;
+			background: white;
+			color: rgb(0, 0, 0);
+			padding: 10px calc(5px + 1vw);
+			margin: 2px;
+			border-radius: 3px;
+			border: none;
+			width: fit-content;
 		}
 	}
 
 	.btn {
-		display: flex;
-		align-items: center;
-		font-size: 0.9em;
-		box-shadow: 1px 3px 10px rgba(0, 0, 0, 0.15);
-		// border-radius: 30px;
-
-		&.btn-warning {
-			color: white;
-		}
-
-		img {
-			width: 20px;
-			margin-right: 4px;
-		}
+		margin: 2px;
+		font-size: 0.7em;
+		font-weight: 600;
+		text-transform: uppercase;
 	}
-
-	.btn-hover {
-		position: absolute;
-		width: calc(70px + 1vw);
-		background-color: rgba(0, 0, 0, 0.15);
-		border: solid 1px rgba(0, 0, 0, 0.15);
-		overflow: hidden;
-		transition: all 300ms ease-out;
-		&:hover {
-			width: 170px;
-			span {
-				text-align: center;
-				opacity: 1;
-			}
-		}
-		img {
-			width: calc(25px + 0.5vw);
-		}
-		span {
-			opacity: 0;
-			position: absolute;
-			top: 50%;
-			transform: translateY(-50%);
-			width: 100%;
-			transition: all 300ms ease-out;
-		}
-	}
-
 	.btn-setup {
 		top: 60px;
-		right: 5px;
 		&.setup {
-			background: rgba(0, 190, 0, 0.35);
+			background: $success-low;
+			&:hover {
+				background: $success;
+			}
 		}
 	}
+	.btn-controls {
+		top: 115px;
+	}
 	.btn-camera {
-		top: 120px;
-		right: 5px;
+		top: 170px;
 	}
 
-	
+	.maze-dropdown {
+		position: relative;
+
+		.dropdown {
+			position: absolute;
+			top: 100%;
+			left: 0;
+			width: 100%;
+			min-width: fit-content;
+			z-index: 2;
+
+			.dropdown-item {
+				padding: 10px;
+				font-size: 0.8em;
+				font-weight: 600;
+				color: white;
+				background: $secondary;
+				cursor: pointer;
+				&:hover {
+					filter: brightness(0.9);
+				}
+			}
+		}
+	}
+
 	@media (max-width: 792px) {
 		.btn {
 			span {
 				display: none;
 			}
 		}
-		.btn-hover {
-			&:hover {
-				width: calc(70px + 0.5vw);
-			}
-		}
-		.btn-camera {
+		.btn-controls {
 			display: none;
 		}
 	}
