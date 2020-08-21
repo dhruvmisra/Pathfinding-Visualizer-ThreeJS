@@ -1,4 +1,4 @@
-<h1 style="text-align: center">Pathfinding Visualizer ThreeJS</h1>
+<h1 align="center">Pathfinding Visualizer ThreeJS</h1>
 
 <div align="center">
 <img src="https://img.shields.io/badge/made%20by-dhruvmisra-blue.svg" >
@@ -20,6 +20,7 @@
 
 ## Live Demo
 The live demo can be found [here](https://dhruvmisra.github.io/Pathfinding-Visualizer-ThreeJS/).
+
 <img src="./readme_assets/demo.gif" width="100%">
 
 ## Features
@@ -43,6 +44,7 @@ Two methods to generate a maze:
 
 ### First-Person view
 Roam around the world you create in First-Person view and watch the algorithm move under your feet!
+
 <img src="./readme_assets/firstPerson.jpg" width="100%">
 
 ## Attributions
@@ -70,4 +72,4 @@ npm run serve
 * Add visited nodes counter and path length
 
 <br>
-<p style="text-align: center">Made with ❤️ in Vue.js</p>
+<p align="center">Made with ❤️ in Vue.js</p>
