@@ -237,7 +237,7 @@ export default {
 			//Grid helper
 			var size = this.cols * this.nodeDimensions.height;
 			var divisions = this.cols;
-			var gridHelper = new THREE.GridHelper(size, divisions, 0x6F7689, 0x6F7689);
+			var gridHelper = new THREE.GridHelper(size, divisions, 0x5c78bd, 0x5c78bd);
 			gridHelper.position.y = 0.035;
 			this.scene.add(gridHelper);
 
@@ -469,12 +469,6 @@ export default {
 				rotationMatrix = new THREE.Matrix4();
 				rotationMatrix.makeRotationY(this.degreesToRadians(270));
 			}
-
-
-			// if (rotationMatrix == undefined) {
-			// 	rotationMatrix = new THREE.Matrix4();
-			// }
-			// rotationMatrix.makeRotationX(this.controls.getObject().rotation.x);
 
 			// Player is not moving forward, apply rotation matrix needed
 			if (rotationMatrix !== undefined) {

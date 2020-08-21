@@ -38,20 +38,20 @@
 				key="visualize"
 				v-if="!worldSetup"
 			>
-				<!-- <img src="@/assets/icons/path.svg" alt="" /> -->
+				<img class="fallback-icon" src="@/assets/icons/path.svg" alt="" />
 				<span>Visualize!</span>
 			</Button>
 			<Button class="danger" @click="clearPath" key="clear-path">
-				<!-- <img src="@/assets/icons/clear-path.svg" alt="" /> -->
+				<img class="fallback-icon" src="@/assets/icons/cross.svg" alt="" />
 				<span>Clear path</span>
 			</Button>
 			<Button class="danger" @click="clearWalls" key="clear-walls">
-				<!-- <img src="@/assets/icons/clear-wall.svg" alt="" /> -->
+				<img class="fallback-icon" src="@/assets/icons/cross.svg" alt="" />
 				<span>Clear walls</span>
 			</Button>
 			<div class="maze-dropdown" key="maze-select">
 				<Button class="info btn-maze" @click="dropdownOpen = !dropdownOpen">
-					<!-- <img src="@/assets/icons/maze.svg" alt="" /> -->
+					<img class="fallback-icon" src="@/assets/icons/maze.svg" alt="" />
 					<span>Maze Algorithms</span>
 				</Button>
 				<div class="dropdown" v-if="dropdownOpen">
@@ -76,7 +76,7 @@
 			</select>
 		</transition-group>
 		<Button
-			class="btn hover btn-setup warning"
+			class="hover btn-setup warning"
 			:class="{ setup: worldSetup }"
 			key="setup"
 			v-if="controlType != 'PointerLock'"
@@ -86,7 +86,7 @@
 			<span>{{ worldSetup ? "Complete Setup" : "Setup World" }}</span>
 		</Button>
 		<Button
-			class="btn hover btn-controls warning"
+			class="hover btn-controls warning"
 			key="switch-controls"
 			v-if="!worldSetup"
 			@click="switchControl"
@@ -96,7 +96,7 @@
 			<span>{{ controlType == "Orbit" ? "First-person" : "Perspective" }}</span>
 		</Button>
 		<Button
-			class="btn hover btn-camera warning"
+			class="hover btn-camera warning"
 			key="reset-camera"
 			v-if="controlType == 'Orbit'"
 			@click="$refs.visualizer.resetCamera()"
@@ -105,7 +105,7 @@
 			<span>Reset Camera</span>
 		</Button>
 
-		<Info></Info>
+		<Info ref="info" :colors="colors"></Info>
 	</div>
 </template>
 
@@ -135,23 +135,43 @@ export default {
 				type: "weighted",
 				info: {
 					heading: "Dijkstra's Algorithm",
-					text: ""
+					text: `The father of pathfinding algorithms, Dijkstra’s algorithm creates a tree of shortest paths from the starting vertex, the source, to all other points in the graph.
+					<br><br>
+					It is a <b>weighted</b> algorithm and <b>guarantees</b> the shortest path!`
 				}
 			},
 			{
 				algorithm: "astar",
 				displayName: "A* Search",
 				type: "weighted",
+				info: {
+					heading: "A* Search Algorithm",
+					text: `A* Search algorithm is one of the best and popular technique used in path-finding and graph traversals. A* algorithm introduces a heuristic into a regular graph-searching algorithm, essentially planning ahead at each step so a more optimal decision is made.
+					<br><br>
+					It is a <b>weighted</b> algorithm and <b>guarantees</b> the shortest path!`
+				}
 			},
 			{
 				algorithm: "bfs",
 				displayName: "Breadth-first Search",
 				type: "unweighted",
+				info: {
+					heading: "Breadth-first Search",
+					text: `Breadth-first search is an algorithm for traversing or searching tree or graph data structures. It starts at the tree root, and explores all of the neighbor nodes at the present depth prior to moving on to the nodes at the next depth level.
+					<br><br>
+					It is a <b>unweighted</b> algorithm and <b>guarantees</b> the shortest path!`
+				}
 			},
 			{
 				algorithm: "dfs",
 				displayName: "Depth-first Search",
 				type: "unweighted",
+				info: {
+					heading: "Depth-first Search",
+					text: `Depth-first search is an algorithm for traversing or searching tree or graph data structures. The algorithm starts at the root node and explores as far as possible along each branch before backtracking.
+					<br><br>
+					It is a <b>unweighted</b> algorithm and <b>does not guarantees</b> the shortest path!`
+				}
 			},
 		],
 		selectedAlgorithm: null,
@@ -199,7 +219,7 @@ export default {
 			start: { r: 0, g: 1, b: 0 },
 			finish: { r: 1, g: 0, b: 0 },
 			wall: { r: 0.109, g: 0.109, b: 0.45 },
-			visited: { r: 0.27, g: 0.878, b: 0.968 },
+			visited: { r: 0.329, g: 0.27, b: 0.968 },
 			path: { r: 1, g: 1, b: 0 },
 		},
 		infoStatus: '',
@@ -213,7 +233,13 @@ export default {
 			if (newVal.type == "unweighted") {
 				this.clearWalls();
 			}
+			this.$refs.info.resetToLegends();
 		},
+		worldSetup: function(newVal, oldVal) {
+			if(newVal) {
+				this.clearPath();
+			}
+		}
 	},
 	created() {
 		this.selectedAlgorithm = this.algorithms[0];
@@ -224,7 +250,14 @@ export default {
 	methods: {
 		onClick(node) {
 			let vm = this;
-			if (this.visualizerState == "running" || this.selectedAlgorithm.type == "unweighted") return;
+			if (this.visualizerState == "running") return;
+			if(this.selectedAlgorithm.type == "unweighted") {
+				this.$refs.info.error({
+					heading: "Uh oh",
+					text: "Can't add walls in an unweighted algorithm."
+				});
+				return;
+			}
 			if (node.status != "wall") {
 				if (node.status == "start" || node.status == "finish") return;
 				node.status = "wall";
@@ -280,8 +313,15 @@ export default {
 		switchControl() {
 			if (this.controlType == "Orbit") {
 				this.controlType = "PointerLock";
+				setTimeout(() => {
+					this.$refs.info.alert({
+						heading: "Start First-Person",
+						text: "Click anywhere on the canvas to start the First-Person mouse movement. Press Esc to exit."
+					});
+				}, 2000)
 			} else {
 				this.controlType = "Orbit";
+				this.$refs.info.resetToLegends();
 			}
 		},
 
@@ -335,7 +375,12 @@ export default {
 				}
 				console.log("success:", success);
 				if (success == false) {
+					this.clearPath();
 					this.visualizerState = "finished";
+					this.$refs.info.error({
+						heading: "Uh oh",
+						text: "Can't find the path when one end is unreachable."
+					});
 					return;
 				}
 				const nodesInShortestPathOrder = getNodesInShortestPathOrder(finishNode);
@@ -346,6 +391,7 @@ export default {
 		},
 
 		animateAlgorithm(visitedNodesInOrder, nodesInShortestPathOrder, timerDelay) {
+			console.log('called')
 			for (let i = 0; i <= visitedNodesInOrder.length; i++) {
 				if (i === visitedNodesInOrder.length) {
 					setTimeout(() => {
@@ -384,7 +430,8 @@ export default {
 						position: false,
 					});
 					if (i == nodesInShortestPathOrder.length - 1) {
-						vm.visualizerState = "clear";
+						vm.visualizerState = "finished";
+						vm.$refs.info.alert(this.selectedAlgorithm.info);
 					}
 				}, timerDelay * i);
 			}
@@ -442,6 +489,7 @@ export default {
 		left: 0;
 		width: 100%;
 		display: flex;
+		flex-wrap: wrap;
 		align-items: center;
 		transition: all 500ms ease-out;
 		z-index: 1;
@@ -461,7 +509,7 @@ export default {
 			height: 40px;
 			background: white;
 			color: rgb(0, 0, 0);
-			padding: 10px calc(5px + 1vw);
+			padding: 10px;
 			margin: 2px;
 			border-radius: 3px;
 			border: none;
@@ -489,6 +537,9 @@ export default {
 	}
 	.btn-camera {
 		top: 170px;
+	}
+	.fallback-icon {
+		display: none;
 	}
 
 	.maze-dropdown {
@@ -521,9 +572,26 @@ export default {
 			span {
 				display: none;
 			}
+			&.hover {
+				&:hover {
+					width: 55px;
+				}
+			}
+		}
+		.btn-camera {
+			top: 115px;
+		}
+		.fallback-icon {
+			display: block;
 		}
 		.btn-controls {
 			display: none;
+		}
+		.header {
+			select {
+				padding: 2px;
+				font-size: 0.7em;
+			}
 		}
 	}
 

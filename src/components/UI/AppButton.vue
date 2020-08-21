@@ -50,14 +50,14 @@ export default {
 
 .accent {
 	background-color: $primary-low;
-	&:hover:not(:disabled), &:focus:not(:disabled) {
+	&:hover:not(:disabled) {
 		background-color: $primary;
 	}
 }
 
 .danger {
   background-color: $danger-low;
-	&:hover:not(:disabled), &:focus:not(:disabled) {
+	&:hover:not(:disabled) {
 		background-color: $danger;
 	}
 	&:disabled {
@@ -67,15 +67,23 @@ export default {
 
 .info {
   background-color: $secondary-low;
-	&:hover:not(:disabled), &:focus:not(:disabled) {
+	&:hover:not(:disabled) {
 		background-color: $secondary;
 	}
 }
 
 .warning {
   background-color: $warning-low;
-	&:hover:not(:disabled), &:focus:not(:disabled) {
+	&:hover:not(:disabled) {
 		background-color: $warning;
+	}
+}
+
+.white {
+  background-color: rgba(255, 255, 255, 0.65);
+	color: #000000;
+	&:hover:not(:disabled) {
+		background-color: #ffffff;
 	}
 }
 
