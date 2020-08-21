@@ -170,7 +170,7 @@ export default {
 					heading: "Depth-first Search",
 					text: `Depth-first search is an algorithm for traversing or searching tree or graph data structures. The algorithm starts at the root node and explores as far as possible along each branch before backtracking.
 					<br><br>
-					It is a <b>unweighted</b> algorithm and <b>does not guarantees</b> the shortest path!`
+					It is a <b>unweighted</b> algorithm and <b>does not guarantee</b> the shortest path!`
 				}
 			},
 		],

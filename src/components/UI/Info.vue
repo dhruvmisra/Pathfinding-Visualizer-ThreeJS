@@ -190,7 +190,7 @@ export default {
 		this.constructLegends();
 		setTimeout(() => {
 			this.startTutorial();
-		}, 1500)
+		}, 1800);
 	},
 	methods: {
 		constructLegends() {
