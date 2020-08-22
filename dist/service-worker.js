@@ -14,7 +14,7 @@
 importScripts("https://storage.googleapis.com/workbox-cdn/releases/4.3.1/workbox-sw.js");
 
 importScripts(
-  "/Pathfinding-Visualizer-ThreeJS/precache-manifest.6d8297ee15d4670d000164db3e3c4a61.js"
+  "/Pathfinding-Visualizer-ThreeJS/precache-manifest.397d1c3ff524a84d0e25374d4cba4f9a.js"
 );
 
 workbox.core.setCacheNameDetails({prefix: "pathfinding-visualizer-threejs"});
