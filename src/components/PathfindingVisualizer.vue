@@ -52,7 +52,7 @@
 				<span class="sm">walls</span>
 			</Button>
 			<div class="maze-dropdown" key="maze-select">
-				<Button class="info btn-maze" @click="dropdownOpen = !dropdownOpen">
+				<Button class="info btn-maze" @click="onMazeDropdownClick">
 					<img class="fallback-icon" src="@/assets/icons/maze.svg" alt="" />
 					<span class="lg">Maze Algorithms</span>
 				</Button>
@@ -235,6 +235,7 @@ export default {
 			if (newVal.type == "unweighted") {
 				this.clearWalls();
 			}
+			this.dropdownOpen = false;
 			this.$refs.info.resetToLegends();
 		},
 		worldSetup: function(newVal, oldVal) {
@@ -265,6 +266,18 @@ export default {
 				node.status = "wall";
 			} else {
 				node.status = "default";
+			}
+		},
+
+		onMazeDropdownClick() {
+			if(this.selectedAlgorithm.type != 'unweighted') {
+				this.dropdownOpen = !this.dropdownOpen;
+			} else {
+				this.dropdownOpen = false;
+				this.$refs.info.error({
+					heading: "Uh oh",
+					text: "Can't add walls in an unweighted algorithm."
+				});
 			}
 		},
 
