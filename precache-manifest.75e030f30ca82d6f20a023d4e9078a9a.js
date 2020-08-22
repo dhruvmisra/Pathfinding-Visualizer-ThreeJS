@@ -1,6 +1,6 @@
 self.__precacheManifest = (self.__precacheManifest || []).concat([
   {
-    "revision": "403caf273318f5797d4e",
+    "revision": "6b9e1a4b906349918198",
     "url": "/Pathfinding-Visualizer-ThreeJS/css/app.d0fa1af5.css"
   },
   {
@@ -100,12 +100,12 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
     "url": "/Pathfinding-Visualizer-ThreeJS/img/tutorial/speed.jpg"
   },
   {
-    "revision": "3ac08a1fb479aaebde1ae07606a504d6",
+    "revision": "9a35fac048060fb8fdf4ae97556a1ead",
     "url": "/Pathfinding-Visualizer-ThreeJS/index.html"
   },
   {
-    "revision": "403caf273318f5797d4e",
-    "url": "/Pathfinding-Visualizer-ThreeJS/js/app.dc138ce1.js"
+    "revision": "6b9e1a4b906349918198",
+    "url": "/Pathfinding-Visualizer-ThreeJS/js/app.61ee816b.js"
   },
   {
     "revision": "cf5afb6019c793990550",
