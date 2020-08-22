@@ -151,7 +151,7 @@ export default {
 			heading: "Attributions",
 			text: `<div style="text-align: left">
 				<h3 style="margin: 5px 0; opacity: 0.3">Idea</h3>
-				Clément Mihailescu for the inception of this visualizer through his amazing <a href="https://github.com/clementmihailescu/Pathfinding-Visualizer" target="_blank">project</a> and <a href="https://www.youtube.com/channel/UCaO6VoaYJv4kS-TQO_M-N_g" target="_blank">YouTube channel</a>.<br>
+				Clément Mihailescu for the inspiration to build this visualizer through his amazing <a href="https://github.com/clementmihailescu/Pathfinding-Visualizer" target="_blank">project</a> and <a href="https://www.youtube.com/channel/UCaO6VoaYJv4kS-TQO_M-N_g" target="_blank">YouTube channel</a>.<br>
 				And playing krunker.io with my friends.
 				<br><br>
 				<h3 style="margin: 5px 0; opacity: 0.3">WebGL Library</h3>

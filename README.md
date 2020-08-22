@@ -51,7 +51,7 @@ Roam around the world you create in First-Person view and watch the algorithm mo
 
 ## Attributions
 ### Idea
-Clément Mihailescu for the inception of this visualizer through his amazing [project](https://github.com/clementmihailescu/Pathfinding-Visualizer) and [YouTube channel](https://www.youtube.com/channel/UCaO6VoaYJv4kS-TQO_M-N_g)
+Clément Mihailescu for the inspiration to build this visualizer through his amazing [project](https://github.com/clementmihailescu/Pathfinding-Visualizer) and [YouTube channel](https://www.youtube.com/channel/UCaO6VoaYJv4kS-TQO_M-N_g)
 
 And playing krunker.io with my friends.
 
