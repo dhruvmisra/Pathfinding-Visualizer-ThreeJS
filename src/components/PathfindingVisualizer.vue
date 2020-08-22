@@ -442,6 +442,7 @@ export default {
 		generateMaze(algo) {
 			this.dropdownOpen = false;
 			this.clearWalls();
+			this.clearPath();
 			let nodesToAnimate = [];
 			if (algo == "Random Maze") {
 				randomMaze(this.grid, nodesToAnimate, "wall");
