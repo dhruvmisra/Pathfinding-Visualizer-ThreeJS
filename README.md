@@ -16,6 +16,8 @@
 <br>
 
 *A Visualizer for pathfinding algorithms in 3D.*
+
+<img src="./readme_assets/social_preview.png" width="100%">
 <hr>
 
 ## Live Demo
@@ -68,8 +70,9 @@ npm run serve
 ```
 
 ## Future Scope
-* Add more algorithms to visualize
+* Add touch controls for first-person view
 * Add visited nodes counter and path length
+* Add more algorithms to visualize
 
 <br>
 <p align="center">Made with ❤️ in Vue.js</p>

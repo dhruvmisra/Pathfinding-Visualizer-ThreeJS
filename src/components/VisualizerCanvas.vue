@@ -84,7 +84,7 @@ export default {
 				repeatY: 2,
 			},
 			{
-				path: "building4.png",
+				path: "building3.png",
 				repeatY: 3,
 			},
 		],

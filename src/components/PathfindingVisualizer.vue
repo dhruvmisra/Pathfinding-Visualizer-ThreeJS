@@ -39,20 +39,22 @@
 				v-if="!worldSetup"
 			>
 				<img class="fallback-icon" src="@/assets/icons/path.svg" alt="" />
-				<span>Visualize!</span>
+				<span class="lg">Visualize!</span>
 			</Button>
 			<Button class="danger" @click="clearPath" key="clear-path">
 				<img class="fallback-icon" src="@/assets/icons/cross.svg" alt="" />
-				<span>Clear path</span>
+				<span class="lg">Clear path</span>
+				<span class="sm">path</span>
 			</Button>
 			<Button class="danger" @click="clearWalls" key="clear-walls">
 				<img class="fallback-icon" src="@/assets/icons/cross.svg" alt="" />
-				<span>Clear walls</span>
+				<span class="lg">Clear walls</span>
+				<span class="sm">walls</span>
 			</Button>
 			<div class="maze-dropdown" key="maze-select">
 				<Button class="info btn-maze" @click="dropdownOpen = !dropdownOpen">
 					<img class="fallback-icon" src="@/assets/icons/maze.svg" alt="" />
-					<span>Maze Algorithms</span>
+					<span class="lg">Maze Algorithms</span>
 				</Button>
 				<div class="dropdown" v-if="dropdownOpen">
 					<div
@@ -83,7 +85,7 @@
 			@click="worldSetup = !worldSetup"
 		>
 			<img src="@/assets/icons/setup.svg" alt="" />
-			<span>{{ worldSetup ? "Complete Setup" : "Setup World" }}</span>
+			<span class="lg">{{ worldSetup ? "Complete Setup" : "Setup World" }}</span>
 		</Button>
 		<Button
 			class="hover btn-controls warning"
@@ -93,7 +95,7 @@
 		>
 			<img src="@/assets/icons/street-view.svg" alt="" v-if="controlType == 'Orbit'" />
 			<img src="@/assets/icons/perspective.svg" alt="" v-else />
-			<span>{{ controlType == "Orbit" ? "First-person" : "Perspective" }}</span>
+			<span class="lg">{{ controlType == "Orbit" ? "First-person" : "Perspective" }}</span>
 		</Button>
 		<Button
 			class="hover btn-camera warning"
@@ -102,7 +104,7 @@
 			@click="$refs.visualizer.resetCamera()"
 		>
 			<img src="@/assets/icons/reset-camera.svg" alt="" />
-			<span>Reset Camera</span>
+			<span class="lg">Reset Camera</span>
 		</Button>
 
 		<Info ref="info" :colors="colors"></Info>
@@ -522,6 +524,12 @@ export default {
 		font-size: 0.7em;
 		font-weight: 600;
 		text-transform: uppercase;
+		.lg {
+			display: block;
+		}
+		.sm {
+			display: none;
+		}
 	}
 	.btn-setup {
 		top: 60px;
@@ -569,8 +577,12 @@ export default {
 
 	@media (max-width: 792px) {
 		.btn {
-			span {
+			.lg {
 				display: none;
+			}
+			.sm {
+				display: block;
+				font-size: 0.7em;
 			}
 			&.hover {
 				&:hover {
