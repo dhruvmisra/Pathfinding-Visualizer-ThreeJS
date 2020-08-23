@@ -63,6 +63,9 @@ Textures from [OpenGameArt.org](https://opengameart.org/)
 
 Icons made by [Freepik](https://www.flaticon.com/authors/freepik) from [www.flaticon.com](https://www.flaticon.com/)
 
+## Contributing
+Contributions are welcome. Please read [CONTRIBUTING.md](./CONTRIBUTING.md) for more information.
+
 ## Project setup
 ```
 npm install
