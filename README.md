@@ -1,13 +1,18 @@
 <h1 align="center">Pathfinding Visualizer ThreeJS</h1>
+<h2 align="center">
+
+[![Mentioned in Awesome Vue.js](https://awesome.re/mentioned-badge.svg)](https://github.com/vuejs/awesome-vue)
+
+</h2>
 
 <div align="center">
 <img src="https://img.shields.io/badge/made%20by-dhruvmisra-blue.svg" >
 
-<img src="https://img.shields.io/badge/vue-2.6.11-green.svg">
+<img src="https://img.shields.io/badge/vue-2.6.11-41B883.svg">
 
-<img src="https://img.shields.io/github/stars/dhruvmisra/Pathfinding-Visualizer-ThreeJS.svg?style=flat">
+<img src="https://img.shields.io/github/stars/dhruvmisra/Pathfinding-Visualizer-ThreeJS.svg?style=flat&color=orange">
 
-<img src="https://img.shields.io/github/languages/top/dhruvmisra/Pathfinding-Visualizer-ThreeJS.svg">
+<img src="https://img.shields.io/github/languages/top/dhruvmisra/Pathfinding-Visualizer-ThreeJS.svg?style=flat&color=informational">
 
 <img src="https://img.shields.io/github/issues/dhruvmisra/Pathfinding-Visualizer-ThreeJS.svg">
 
@@ -18,7 +23,6 @@
 *A Visualizer for pathfinding algorithms in 3D.*
 
 <img src="./readme_assets/social_preview.png" width="100%">
-<hr>
 
 ## Live Demo
 The live demo can be found [here](https://dhruvmisra.github.io/Pathfinding-Visualizer-ThreeJS/).
