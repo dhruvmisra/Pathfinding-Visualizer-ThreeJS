@@ -345,11 +345,11 @@ export default {
 			// Setting hover handler
 			this.mouse = new THREE.Vector2();
 
-			this.gameLoop();
+			this.renderLoop();
 		},
 
-		gameLoop() {
-			requestAnimationFrame(this.gameLoop);
+		renderLoop() {
+			requestAnimationFrame(this.renderLoop);
 			if (this.controlType == "PointerLock") {
 				var delta = this.clock.getDelta();
 				this.animatePlayer(delta);
@@ -450,8 +450,6 @@ export default {
 		},
 
 		detectPlayerCollision() {
-			// The rotation matrix to apply to our direction vector
-			// Undefined by default to indicate ray should coming from front
 			let rotationMatrix;
 			// Get direction of camera
 			let cameraDirection = this.controls.getDirection(new THREE.Vector3(0, 0, 0)).clone();
@@ -659,9 +657,10 @@ export default {
 		updateNode(node) {
 			if (node.status == "wall") {
 				if (this.walls[node.id] == null) {
-					this.addWall(node);
+					let scaleY = 0.5 + Math.random();
+					this.addWall(node, scaleY, 1000);
 				} else if (!this.walls[node.id].visible) {
-					this.showWall(this.walls[node.id]);
+					this.showWall(this.walls[node.id], 1000);
 				}
 				tweenToColor(node, this.ground.geometry, [this.colors.wall]);
 			} else if (node.status == "start") {
@@ -678,9 +677,8 @@ export default {
 			}
 		},
 
-		addWall(node) {
+		addWall(node, scaleY, duration) {
 			let materialId = 1 + Math.floor(Math.random() * (this.wallMaterials.length - 1));
-			let scaleY = 0.5 + Math.random();
 
 			let wall = new THREE.Mesh(this.wallGeomtery, this.wallMaterials[materialId]);
 			wall.name = "wall";
@@ -700,17 +698,17 @@ export default {
 					-gridHeight / 2 + this.nodeDimensions.height / 2 + node.row * this.nodeDimensions.height;
 			wall.position.set(x, height, z);
 			new TWEEN.Tween(wall.position)
-				.to({ x: x, y: y, z: z }, 1000)
+				.to({ x: x, y: y, z: z }, duration)
 				.easing(TWEEN.Easing.Bounce.Out)
 				.start();
 		},
 
-		showWall(wall) {
+		showWall(wall, duration) {
 			let height = wall.geometry.parameters.height * wall.scale.y;
 			wall.visible = true;
 			wall.position.setY(height);
 			new TWEEN.Tween(wall.position)
-				.to({ y: height / 2 }, 1000)
+				.to({ y: height / 2 }, duration)
 				.easing(TWEEN.Easing.Bounce.Out)
 				.start();
 		},
@@ -777,8 +775,6 @@ export default {
 
 		moveHandler(event) {
 			console.log("Moved");
-			// let vm = this;
-			// let mouse = new THREE.Vector2();
 		},
 
 		clickHandler(event) {

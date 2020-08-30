@@ -188,9 +188,20 @@ export default {
 	},
 	mounted() {
 		this.constructLegends();
-		setTimeout(() => {
-			this.startTutorial();
-		}, 1800);
+		let tutorialItem = localStorage.getItem('tutorial-viewed');
+		tutorialItem = JSON.parse(tutorialItem);
+		if(tutorialItem && tutorialItem.expiry > Date.now()) {
+			setTimeout(() => {
+				this.alert();
+			}, 1800);
+		} else {
+			setTimeout(() => {
+				this.startTutorial();
+			}, 1800);
+			let currentTimestamp = Math.round(new Date().getTime());
+			currentTimestamp += 86400000 * 2; // 2 days
+			localStorage.setItem('tutorial-viewed', JSON.stringify({ expiry: new Date(currentTimestamp).getTime() }));
+		}
 	},
 	methods: {
 		constructLegends() {
