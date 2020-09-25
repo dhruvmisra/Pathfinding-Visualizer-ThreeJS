@@ -3,6 +3,7 @@
 		<button class="btn-close" @click="resetToLegends" v-if="status != ''">&#10006;</button>
 		<h2>{{ current.heading }}</h2>
 		<p class="main-content" v-html="current.text"></p>
+		<div class="swarm-unlocked" v-if="status == 'attributions' && swarmUnlocked">Swarm Unlocked!</div>
 		<div class="info-buttons">
 			<Button class="info" @click="startTutorial" v-if="status == ''">Tutorial</Button>
 			<Button class="danger" @click="showAttributions" v-if="status == ''">Attributions</Button>
@@ -37,6 +38,9 @@ export default {
 			heading: "",
 			text: ""
 		},
+		clemCounter: 0,
+		clemTimeout: null,
+		swarmUnlocked: false,
 		tutorial: [
 			{
 				heading: "Pathfinding Visualizer in 3D!",
@@ -150,18 +154,18 @@ export default {
 		attributions: {
 			heading: "Attributions",
 			text: `<div style="text-align: left">
-				<h3 style="margin: 5px 0; opacity: 0.3">Idea</h3>
-				Clément Mihailescu for the inspiration to build this visualizer through his amazing <a href="https://github.com/clementmihailescu/Pathfinding-Visualizer" target="_blank">project</a> and <a href="https://www.youtube.com/channel/UCaO6VoaYJv4kS-TQO_M-N_g" target="_blank">YouTube channel</a>.<br>
+				<h3 style="margin: 5px 0; opacity: 0.4">Idea</h3>
+				<span id="clem">Clément Mihailescu</span> for the inspiration to build this visualizer through his amazing <a href="https://github.com/clementmihailescu/Pathfinding-Visualizer" target="_blank">project</a> and <a href="https://www.youtube.com/channel/UCaO6VoaYJv4kS-TQO_M-N_g" target="_blank">YouTube channel</a>.<br>
 				And playing krunker.io with my friends.
 				<br><br>
-				<h3 style="margin: 5px 0; opacity: 0.3">WebGL Library</h3>
+				<h3 style="margin: 5px 0; opacity: 0.4">WebGL Library</h3>
 				Three.js
 				<br><br>
-				<h3 style="margin: 5px 0; opacity: 0.3">Assets & Icons</h3>
+				<h3 style="margin: 5px 0; opacity: 0.4">Assets & Icons</h3>
 				Textures from <a href="https://opengameart.org/" target="_blank">OpenGameArt.org</a><br>
 				Icons made by <a href="https://www.flaticon.com/authors/freepik" target="_blank">Freepik</a> from <a href="https://www.flaticon.com/" target="_blank"> www.flaticon.com</a>
 				<br><br>
-				<h3 style="margin: 5px 0; opacity: 0.3">Fork me on GitHub</h3>
+				<h3 style="margin: 5px 0; opacity: 0.4">Fork me on GitHub</h3>
 				Source code <a href="https://github.com/dhruvmisra/Pathfinding-Visualizer-ThreeJS" target="_blank">repository</a>.
 				<br><br>
 				<p style="text-align: center; margin: 1em 0;">Made with ❤️ in Vue.js</p>
@@ -248,10 +252,32 @@ export default {
 		showAttributions() {
 			this.current = this.attributions;
 			this.status = 'attributions';
+			if(this.swarmUnlocked) return;
+			this.$nextTick(() => {
+				document.getElementById('clem').addEventListener('click', this.clemClick);
+			});
+		},
+
+		clemClick() {
+			if(this.swarmUnlocked) return;
+
+			clearTimeout(this.clemTimeout);
+			this.clemCounter++;
+			if(this.clemCounter == 5) {
+				this.$emit('unlockSwarm');
+				this.swarmUnlocked = true;
+			}
+			this.clemTimeout = setTimeout(() => {
+				this.clemCounter = 0;
+			}, 3000);
 		},
 
 		resetToLegends() {
 			this.$refs.infoBox.classList.remove('error');
+			let clem = document.getElementById('clem');
+			if(clem) {
+				clem.removeEventListener('click', this.clemClick);
+			}
 			this.current = this.legends;
 			this.status = '';
 		},
@@ -297,7 +323,7 @@ export default {
 	border-radius: 5px;
 	background: linear-gradient(0, $dark 0%, #000000 240%);
 	color: white;
-	box-shadow: 2px 10px 20px rgba(0, 0, 0, 0.4);
+	box-shadow: 2px 10px 30px rgba(#000, 0.4);
 	opacity: 0.4;
 	z-index: 10000;
 	clip-path: circle(30px at calc(100% - 30px) calc(100% - 30px));
@@ -331,16 +357,12 @@ export default {
 			bottom: 15px;
 			opacity: 0.4;
 		}
-		20% {
+		20%, 50% {
 			bottom: 30px;
 			opacity: 1;
 		}
 		40% {
 			bottom: 25px;
-			opacity: 1;
-		}
-		50% {
-			bottom: 30px;
 			opacity: 1;
 		}
 	}
@@ -372,6 +394,18 @@ export default {
 	&.attributions {
 		.main-content {
 			margin-bottom: 0;
+		}
+		#clem {
+			cursor: pointer;
+		}
+		.swarm-unlocked {
+			width: fit-content;
+			margin: 0 auto;
+			padding: 5px;
+			font-size: 0.8em;
+			border-radius: 5px;
+			color: #0f0;
+			background: rgba(#0f0, 0.3);
 		}
 	}
 

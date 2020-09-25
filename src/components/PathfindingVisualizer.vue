@@ -13,6 +13,8 @@
 			:controlType="controlType"
 			:worldSetup="worldSetup"
 			:selectedAlgorithm="selectedAlgorithm"
+			:streaming="streaming"
+			:thresholdValue="thresholdValue"
 			@clickEvent="onClick"
 			@groundInitialized="ground = $event"
 			@switchWorldSetup="worldSetup = !worldSetup"
@@ -41,12 +43,12 @@
 				<img class="fallback-icon" src="@/assets/icons/path.svg" alt="" />
 				<span class="lg">Visualize!</span>
 			</Button>
-			<Button class="danger" @click="clearPath" key="clear-path">
+			<Button class="danger" @click="clearPath" key="clear-path" :disabled="visualizerState == 'running'">
 				<img class="fallback-icon" src="@/assets/icons/cross.svg" alt="" />
 				<span class="lg">Clear path</span>
 				<span class="sm">path</span>
 			</Button>
-			<Button class="danger" @click="clearWalls" key="clear-walls">
+			<Button class="danger" @click="clearWalls" key="clear-walls" :disabled="visualizerState == 'running'">
 				<img class="fallback-icon" src="@/assets/icons/cross.svg" alt="" />
 				<span class="lg">Clear walls</span>
 				<span class="sm">walls</span>
@@ -106,8 +108,22 @@
 			<img src="@/assets/icons/reset-camera.svg" alt="" />
 			<span class="lg">Reset Camera</span>
 		</Button>
+		<Button
+			class="hover btn-device-cam warning"
+			:class="{ setup: worldSetup }"
+			key="device-camera"
+			v-if="worldSetup"
+			@click="deviceCamInput = !deviceCamInput"
+		>
+			<img src="@/assets/icons/setup.svg" alt="" />
+			<span class="lg">{{ "Device Input" }}</span>
+		</Button>
 
-		<Info ref="info" :colors="colors"></Info>
+		<canvas id="video-canvas"></canvas>
+		<video id="video" autoplay></video>
+		<input id="threshold" ref="threshold" v-if="deviceCamInput" type="range" min="0" max="255" v-model="thresholdValue">
+
+		<Info ref="info" :colors="colors" @unlockSwarm="unlockSwarm"></Info>
 	</div>
 </template>
 
@@ -133,6 +149,7 @@ export default {
 		algorithms: [
 			{
 				algorithm: "dijkstra",
+				heuristic: "",
 				displayName: "Dijkstra's Algorithm",
 				type: "weighted",
 				info: {
@@ -144,6 +161,7 @@ export default {
 			},
 			{
 				algorithm: "astar",
+				heuristic: "poweredManhattanDistance",
 				displayName: "A* Search",
 				type: "weighted",
 				info: {
@@ -155,27 +173,41 @@ export default {
 			},
 			{
 				algorithm: "bfs",
+				heuristic: "",
 				displayName: "Breadth-first Search",
 				type: "unweighted",
 				info: {
 					heading: "Breadth-first Search",
 					text: `Breadth-first search is an algorithm for traversing or searching tree or graph data structures. It starts at the tree root, and explores all of the neighbor nodes at the present depth prior to moving on to the nodes at the next depth level.
 					<br><br>
-					It is a <b>unweighted</b> algorithm and <b>guarantees</b> the shortest path!`
+					It is an <b>unweighted</b> algorithm and <b>guarantees</b> the shortest path!`
 				}
 			},
 			{
 				algorithm: "dfs",
+				heuristic: "",
 				displayName: "Depth-first Search",
 				type: "unweighted",
 				info: {
 					heading: "Depth-first Search",
 					text: `Depth-first search is an algorithm for traversing or searching tree or graph data structures. The algorithm starts at the root node and explores as far as possible along each branch before backtracking.
 					<br><br>
-					It is a <b>unweighted</b> algorithm and <b>does not guarantee</b> the shortest path!`
+					It is an <b>unweighted</b> algorithm and <b>does not guarantee</b> the shortest path!`
 				}
 			},
 		],
+		swarm: {
+			algorithm: "CLA",
+			heuristic: "manhattanDistance",
+			displayName: "Swarm Algorithm",
+			type: "weighted",
+			info: {
+				heading: "Swarm Algorithm",
+				text: `The Swarm Algorithm, presumably developed by Clément Mihailescu and Hussein Farah, is essentially a mixture of Dijkstra's Algorithm and A* Search. More precisely, while it converges to the target node like A*, it still explores quite a few neighboring nodes surrounding the start node like Dijkstra's.
+				<br><br>
+				It is a <b>weighted</b> algorithm and <b>does not guarantee</b> the shortest path!`
+			}
+		},
 		selectedAlgorithm: null,
 		speeds: [
 			{
@@ -216,6 +248,9 @@ export default {
 			col: 22,
 		},
 		worldSetup: false,
+		deviceCamInput: false,
+		streaming: false,
+		thresholdValue: 100,
 		colors: {
 			default: { r: 1, g: 1, b: 1 },
 			start: { r: 0, g: 1, b: 0 },
@@ -241,6 +276,50 @@ export default {
 		worldSetup: function(newVal, oldVal) {
 			if(newVal) {
 				this.clearPath();
+			} else {
+				this.deviceCamInput = false;
+			}
+		},
+		deviceCamInput: function(newVal, oldVal) {
+			if(newVal) {
+				function hasGetUserMedia() {
+					return !!(navigator.mediaDevices &&
+						navigator.mediaDevices.getUserMedia);
+				}
+
+				const videoCanvas = document.querySelector('#video-canvas');
+				let videoCtx = videoCanvas.getContext("2d");
+				const video = document.querySelector('video');
+				this.thresholdValue = 100;
+				const scale = 17;
+				const width = 512;
+				const height = 512;
+				if (hasGetUserMedia()) {
+					videoCanvas.width = width/scale;
+					videoCanvas.height = height/scale;
+					const constraints = {
+						video: { width: { exact: width/scale }, height: { exact: height/scale } }
+					};
+
+					navigator.mediaDevices.getUserMedia(constraints)
+						.then((stream) => {
+							video.srcObject = stream;
+							this.streaming = true;
+						});
+				} else {
+					alert('getUserMedia() is not supported by your browser');
+				}
+			} else {
+				const video = document.querySelector('video');
+				const stream = video.srcObject;
+				const tracks = stream.getTracks();
+
+				tracks.forEach(function(track) {
+					track.stop();
+				});
+
+				video.srcObject = null;
+				this.streaming = false;
 			}
 		}
 	},
@@ -289,6 +368,11 @@ export default {
 				this.finish = obj.finish;
 				this.finish.gridId = obj.finish.row * this.cols + obj.finish.col;
 			}
+		},
+
+		unlockSwarm() {
+			console.log('Unlocked Swarm');
+			this.algorithms.push(this.swarm);
 		},
 
 		clearWalls() {
@@ -376,7 +460,7 @@ export default {
 						finishNode,
 						nodesToAnimate,
 						this.selectedAlgorithm.algorithm,
-						"poweredManhattanDistance"
+						this.selectedAlgorithm.heuristic,
 					);
 				} else {
 					this.clearWalls();
@@ -406,7 +490,6 @@ export default {
 		},
 
 		animateAlgorithm(visitedNodesInOrder, nodesInShortestPathOrder, timerDelay) {
-			console.log('called')
 			for (let i = 0; i <= visitedNodesInOrder.length; i++) {
 				if (i === visitedNodesInOrder.length) {
 					setTimeout(() => {
@@ -560,6 +643,9 @@ export default {
 	.btn-camera {
 		top: 170px;
 	}
+	.btn-device-cam {
+		top: 225px;
+	}
 	.fallback-icon {
 		display: none;
 	}
@@ -619,6 +705,31 @@ export default {
 				font-size: 0.7em;
 			}
 		}
+	}
+
+	#video-canvas {
+		position: absolute;
+		bottom: 10px;
+		left: 0;
+		width: 80px;
+		height: 80px;
+		visibility: hidden;
+	}
+	#video {
+		position: absolute;
+		bottom: 80px;
+		left: 4px;
+		width: 80px;
+		height: 80px;
+		transform: rotateY(180deg);
+    -webkit-transform:rotateY(180deg); /* Safari and Chrome */
+    -moz-transform:rotateY(180deg); /* Firefox */
+	}
+	#threshold {
+		position: absolute;
+		bottom: 55px;
+		left: 3px;
+		width: 80px;
 	}
 
 	.slide-enter-active,
