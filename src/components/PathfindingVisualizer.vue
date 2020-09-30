@@ -110,12 +110,12 @@
 		</Button>
 		<Button
 			class="hover btn-device-cam warning"
-			:class="{ setup: worldSetup }"
+			:class="{ active: deviceCamInput }"
 			key="device-camera"
 			v-if="worldSetup"
 			@click="deviceCamInput = !deviceCamInput"
 		>
-			<img src="@/assets/icons/setup.svg" alt="" />
+			<img src="@/assets/icons/camera.svg" alt="" />
 			<span class="lg">{{ "Device Input" }}</span>
 		</Button>
 
@@ -286,6 +286,8 @@ export default {
 					return !!(navigator.mediaDevices &&
 						navigator.mediaDevices.getUserMedia);
 				}
+
+				this.clearWalls();
 
 				const videoCanvas = document.querySelector('#video-canvas');
 				let videoCtx = videoCanvas.getContext("2d");
@@ -645,6 +647,12 @@ export default {
 	}
 	.btn-device-cam {
 		top: 225px;
+		&.active {
+			background: $success-low;
+			&:hover {
+				background: $success;
+			}
+		}
 	}
 	.fallback-icon {
 		display: none;
@@ -692,6 +700,9 @@ export default {
 		}
 		.btn-camera {
 			top: 115px;
+		}
+		.btn-device-cam {
+			top: 170px;
 		}
 		.fallback-icon {
 			display: block;

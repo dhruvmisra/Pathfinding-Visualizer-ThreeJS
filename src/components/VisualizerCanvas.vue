@@ -97,6 +97,9 @@ export default {
 		intersectedNode: null,
 		clock: null,
 		stats: null,
+		// Device cam
+		videoCanvas: null,
+		video: null
 	}),
 	computed: {
 		clickableObjects() {
@@ -156,12 +159,24 @@ export default {
 					.start();
 			}
 		},
+		streaming: function(newVal, oldVal) {
+			if(!newVal) {
+				for(let i=0; i<this.rows; i++) {
+					for(let j=0; j<this.cols; j++) {
+						this.updateNode(this.grid[i][j]);
+					}
+				}
+			}
+		}
 	},
 	created() {
 		this.cameraY = this.defaultCameraY;
 	},
 	mounted() {
 		this.init();
+		
+		this.videoCanvas = document.querySelector('#video-canvas');
+		this.video = document.querySelector('video');
 	},
 	methods: {
 		init() {
@@ -501,24 +516,19 @@ export default {
 		},
 
 		deviceCamLoop() {
-			const videoCanvas = document.querySelector('#video-canvas');
-			let videoCtx = videoCanvas.getContext("2d");
-			const video = document.querySelector('video');
-			const scale = 17;
-			const width = 512;
-			const height = 512;
+			let videoCtx = this.videoCanvas.getContext("2d");
 
-			videoCtx.drawImage(video, 0, 0, videoCanvas.width, videoCanvas.height);
-			let pixels = videoCtx.getImageData(0, 0, videoCanvas.width, videoCanvas.height);
-			for(let y=0; y<videoCanvas.height; y++) {
-				for(let x=0; x<videoCanvas.width; x++) {
-					let index = (x + y * videoCanvas.width) * 4;
+			videoCtx.drawImage(this.video, 0, 0, this.videoCanvas.width, this.videoCanvas.height);
+			let pixels = videoCtx.getImageData(0, 0, this.videoCanvas.width, this.videoCanvas.height);
+			for(let y=0; y<this.videoCanvas.height; y++) {
+				for(let x=0; x<this.videoCanvas.width; x++) {
+					let index = (x + y * this.videoCanvas.width) * 4;
 					let r = pixels.data[index+0];
 					let g = pixels.data[index+1];
 					let b = pixels.data[index+2];
 					
 					let brightness = Math.floor((r+g+b)/3);
-					let gridX = Math.floor(videoCanvas.width-1-x);
+					let gridX = Math.floor(this.videoCanvas.width-1-x);
 					let status = "default";
 					if (y == this.start.row && gridX == this.start.col) {
 						status = "start";
@@ -690,13 +700,15 @@ export default {
 		nodeWatcher(newVal, oldVal) {
 			// console.log('WATCHER', newVal);
 			if (this.visualizerState == "running") return;
-			this.updateNode(newVal, true);
+			this.updateNode(newVal, this.streaming);
 		},
 
 		updateNode(node, instant = false) {
 			if (node.status == "wall") {
 				let scaleY = 0.5 + Math.random();
-				this.addWall(node, scaleY, instant ? 0 : 1000);
+				if(!instant) {
+					this.addWall(node, scaleY, instant ? 0 : 1000);
+				}
 				tweenToColor(node, this.ground.geometry, [this.colors.wall]);
 			} else if (node.status == "start") {
 				tweenToColor(node, this.ground.geometry, [this.colors.start]);
@@ -705,7 +717,7 @@ export default {
 			} else if (node.status == "visited") {
 				tweenToColor(node, this.ground.geometry, [this.colors.visited]);
 			} else {
-				if (this.walls[node.id] != null && this.walls[node.id].visible) {
+				if (this.walls[node.id] != null && this.walls[node.id].visible && !instant) {
 					this.hideWall(this.walls[node.id]);
 				}
 				tweenToColor(node, this.ground.geometry, [this.colors.default]);
@@ -713,8 +725,10 @@ export default {
 		},
 
 		addWall(node, scaleY, duration) {
-			if (this.walls[node.id] = null) {
-				this.showWall(this.walls[node.id], scaleY, duration);
+			if (!!this.walls[node.id]) {
+				if(!this.walls[node.id].visible) {
+					this.showWall(this.walls[node.id], scaleY, duration);
+				}
 				return;
 			}
 
@@ -823,7 +837,7 @@ export default {
 		},
 
 		moveHandler(event) {
-			console.log("Moved");
+			// console.log("Moved");
 		},
 
 		clickHandler(event) {
