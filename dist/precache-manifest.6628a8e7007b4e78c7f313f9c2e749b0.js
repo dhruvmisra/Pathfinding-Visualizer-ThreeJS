@@ -1,7 +1,7 @@
 self.__precacheManifest = (self.__precacheManifest || []).concat([
   {
-    "revision": "d77b70553f84994f230f",
-    "url": "/Pathfinding-Visualizer-ThreeJS/css/app.d0fa1af5.css"
+    "revision": "0a94b0d32f077e01f7a9",
+    "url": "/Pathfinding-Visualizer-ThreeJS/css/app.452314dd.css"
   },
   {
     "revision": "d47983740cc9d1fa722fda8aea511a7e",
@@ -14,6 +14,10 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
   {
     "revision": "d6746a1097785098e1aa21578cc08cab",
     "url": "/Pathfinding-Visualizer-ThreeJS/img/building3.d6746a10.png"
+  },
+  {
+    "revision": "6ac2385c92d7c7d56b8780cdb722ae74",
+    "url": "/Pathfinding-Visualizer-ThreeJS/img/camera.6ac2385c.svg"
   },
   {
     "revision": "6f16807f21cc804c7055a9eecf838b1f",
@@ -60,6 +64,18 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
     "url": "/Pathfinding-Visualizer-ThreeJS/img/street-view.6fd6fe57.svg"
   },
   {
+    "revision": "388984943d5d59a9d105d14c7e0ddd62",
+    "url": "/Pathfinding-Visualizer-ThreeJS/img/tutorial/deviceCamButton.jpg"
+  },
+  {
+    "revision": "61bd6989913c26435fcec48e529bd3cc",
+    "url": "/Pathfinding-Visualizer-ThreeJS/img/tutorial/deviceCamGrid.jpg"
+  },
+  {
+    "revision": "93ed0e71bcb5bca8c212c356ba77b120",
+    "url": "/Pathfinding-Visualizer-ThreeJS/img/tutorial/deviceCamPreview.jpg"
+  },
+  {
     "revision": "6d02cd7c1029fc73e9c28fc81f89a713",
     "url": "/Pathfinding-Visualizer-ThreeJS/img/tutorial/firstPerson.jpg"
   },
@@ -100,12 +116,12 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
     "url": "/Pathfinding-Visualizer-ThreeJS/img/tutorial/speed.jpg"
   },
   {
-    "revision": "fd965e40dc9543fa39cd8d707b89219b",
+    "revision": "a52e0bcafdd0a31a8f90acb01c016910",
     "url": "/Pathfinding-Visualizer-ThreeJS/index.html"
   },
   {
-    "revision": "d77b70553f84994f230f",
-    "url": "/Pathfinding-Visualizer-ThreeJS/js/app.b7dc136c.js"
+    "revision": "0a94b0d32f077e01f7a9",
+    "url": "/Pathfinding-Visualizer-ThreeJS/js/app.09830b52.js"
   },
   {
     "revision": "cf5afb6019c793990550",
