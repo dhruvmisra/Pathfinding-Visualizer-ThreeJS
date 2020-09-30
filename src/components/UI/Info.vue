@@ -413,6 +413,9 @@ export default {
 		}
 		#clem {
 			cursor: pointer;
+			user-select: none;
+			-moz-user-select: none;
+			-webkit-user-select: none;
 		}
 		.swarm-unlocked {
 			width: fit-content;

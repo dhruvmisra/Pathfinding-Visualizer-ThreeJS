@@ -53,6 +53,13 @@ Roam around the world you create in First-Person view and watch the algorithm mo
 
 <img src="./readme_assets/firstPerson.jpg" width="100%">
 
+
+### Device camera input
+Turn on your device's camera to create the walls on the grid from the camera feed! Play around with any image that has some good contrast and see it replicated on the grid. 
+
+<img src="./readme_assets/deviceCam.jpg" width="100%">
+
+
 ## Attributions
 ### Idea
 Clément Mihailescu for the inspiration to build this visualizer through his amazing [project](https://github.com/clementmihailescu/Pathfinding-Visualizer) and [YouTube channel](https://www.youtube.com/channel/UCaO6VoaYJv4kS-TQO_M-N_g)
