@@ -67,6 +67,20 @@ export default {
 				<small>("They are quite clearly buildings, Dhruv" - I know but I'm used to the 'wall' terminology :p)</small>`
 			},
 			{
+				heading: "Capture using Device Camera",
+				text: `While setting up the world, click on the camera icon to get the feed from your device camera and create the grid. 
+				<br> 
+				<div style="display:flex; flex-wrap: wrap; align-items: center; justify-content: center;">
+					<img src="img/tutorial/deviceCamButton.jpg" style="width: 160px; margin: 10px;">
+					<img src="img/tutorial/deviceCamPreview.jpg" style="width: 80px; margin: 10px;">
+					<img src="img/tutorial/deviceCamGrid.jpg" style="width: 160px; margin: 10px;">
+				</div>
+				<br>
+				You can preview the feed in the bottom left corner and also set the brightness threshold level. Remember, dark pixels = walls.
+				<br><br>
+				<small>(Might affect performance)</small>`
+			},
+			{
 				heading: "Select algorithm",
 				text: `Select an algorithm from the top-left dropdown and click the Visualize button to, you know, visualize it.
 				<br>
@@ -141,6 +155,8 @@ export default {
 			{
 				heading: "Have fun!",
 				text: `Make sure to enjoy this as much as I did while building it. Practice your FPS skills too.
+				<br><br>
+				There's little Easter Egg hidden in the system too, let's see if you can find it. ;)
 				<br><br>
 				You can view the source code for this project on <a href="https://github.com/dhruvmisra/Pathfinding-Visualizer-ThreeJS" target="_blank">GitHub</a>
 				`
