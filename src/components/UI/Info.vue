@@ -12,6 +12,9 @@
 					<img src="@/assets/icons/github-logo.svg" alt="" />
 				</Button>
 			</a>
+			<a href="https://www.buymeacoffee.com/dhruvmisra" target="_blank" v-if="status == ''">
+				<img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="width: 120px !important; margin: 5px 3px;" >
+			</a>
 			<!-- Tutorial buttons -->
 			<div class="tutorial-buttons" v-if="status == 'tutorial'">
 				<Button class="danger btn-tutorial" @click="resetToLegends">Skip</Button>
@@ -184,6 +187,8 @@ export default {
 				<h3 style="margin: 5px 0; opacity: 0.4">Fork me on GitHub</h3>
 				Source code <a href="https://github.com/dhruvmisra/Pathfinding-Visualizer-ThreeJS" target="_blank">repository</a>.
 				<br><br>
+				<h3 style="margin: 5px 0; opacity: 0.4">Support Me</h3>
+				<a href="https://www.buymeacoffee.com/dhruvmisra" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="width: 120px !important; margin: 5px 0;" ></a>
 				<p style="text-align: center; margin: 1em 0;">Made with ❤️ in Vue.js</p>
 			</div>
 			`
