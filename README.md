@@ -92,7 +92,9 @@ npm run serve
 * Add more algorithms to visualize
 
 ## Support Me
-<a href="https://www.buymeacoffee.com/dhruvmisra" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="width: 120px !important;" ></a>
+<a href="https://www.buymeacoffee.com/dhruvmisra" target="_blank">
+  <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" width="120" >
+</a>
 
 <br>
 <p align="center">Made with ❤️ in Vue.js</p>
