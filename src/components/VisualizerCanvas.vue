@@ -26,13 +26,14 @@
 </template>
 
 <script>
-import * as THREE from "three";
+import THREE from "./Utils/ThreeInstance.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls.js";
 import TWEEN, { removeAll } from "@tweenjs/tween.js";
 import Stats from "three/examples/jsm/libs/stats.module.js";
 
-import { getAllNodes, tweenToColor } from "./algorithms/helpers.js";
+import { getAllNodes } from "./algorithms/helpers.js";
+import Node from "./Utils/GridNode.js";
 
 export default {
 	props: [
@@ -68,28 +69,14 @@ export default {
 		controls: null,
 		orbitControls: null,
 		pointerLockControls: null,
+		clickableObjects: [],
+		collidableObjects: [],
 		raycaster: null,
 		ambientLight: null,
 		hemisphereLight: null,
 		directionalLight: null,
 		ground: null,
-		wallGeomtery: null,
-		wallMaterials: [],
 		walls: {},
-		wallTextures: [
-			{
-				path: "building1.png",
-				repeatY: 1,
-			},
-			{
-				path: "building2.png",
-				repeatY: 2,
-			},
-			{
-				path: "building3.png",
-				repeatY: 3,
-			},
-		],
 		down: false,
 		moved: false,
 		currentEvent: null,
@@ -101,27 +88,7 @@ export default {
 		videoCanvas: null,
 		video: null
 	}),
-	computed: {
-		clickableObjects() {
-			let objects = [];
-			objects.push(this.ground);
-			for (let id of Object.keys(this.walls)) {
-				if (this.walls[id].visible) {
-					objects.push(this.walls[id]);
-				}
-			}
-			return objects;
-		},
-		collidableObjects() {
-			let objects = [];
-			for (let id of Object.keys(this.walls)) {
-				if (this.walls[id].visible) {
-					objects.push(this.walls[id]);
-				}
-			}
-			return objects;
-		}
-	},
+
 	watch: {
 		controlType: function(newVal, oldVal) {
 			this.setControls();
@@ -163,28 +130,32 @@ export default {
 			if(!newVal) {
 				for(let i=0; i<this.rows; i++) {
 					for(let j=0; j<this.cols; j++) {
-						this.updateNode(this.grid[i][j]);
+						this.grid[i][j].updateNode();
 					}
 				}
 			}
 		}
 	},
+
 	created() {
 		this.cameraY = this.defaultCameraY;
 	},
+
 	mounted() {
 		this.init();
 		
 		this.videoCanvas = document.querySelector('#video-canvas');
 		this.video = document.querySelector('video');
 	},
+
 	methods: {
 		init() {
 			let width = window.innerWidth,
 				height = window.innerHeight;
 
 			//Scene
-			this.scene = new THREE.Scene();
+			THREE.VisualizerInstance.scene = new THREE.Scene();
+			this.scene = THREE.VisualizerInstance.scene;
 			this.scene.background = new THREE.Color(0xbbd6ff);
 			this.scene.fog = new THREE.Fog(0xffffff, 0, 750);
 
@@ -233,7 +204,9 @@ export default {
 					vm.ground.receiveShadow = true;
 					vm.ground.position.y = 0.02;
 					vm.scene.add(vm.ground);
+					THREE.VisualizerInstance.groundId = vm.ground.id;
 					vm.initGrid();
+					vm.clickableObjects.push(vm.ground);
 					vm.$emit("groundInitialized", vm.ground);
 				},
 				undefined,
@@ -257,37 +230,6 @@ export default {
 			var gridHelper = new THREE.GridHelper(size, divisions, 0x5c78bd, 0x5c78bd);
 			gridHelper.position.y = 0.035;
 			this.scene.add(gridHelper);
-
-			// Wall
-			// let wallHeight = this.nodeDimensions.width * 2 + Math.random() * this.nodeDimensions.width * 3;
-			let wallHeight = this.nodeDimensions.height * 2;
-			this.wallGeomtery = new THREE.BoxBufferGeometry(
-				this.nodeDimensions.width,
-				wallHeight,
-				this.nodeDimensions.height
-			);
-			let wallTextureObject = this.wallTextures[
-				Math.floor(Math.random() * this.wallTextures.length)
-			];
-			this.wallMaterials.push(
-				new THREE.MeshPhongMaterial({
-					color: new THREE.Color(this.colors.wall.r, this.colors.wall.g, this.colors.wall.b),
-				})
-			);
-			for (let tex of this.wallTextures) {
-				loader.load(
-					require("@/assets/textures/" + tex.path),
-					function(texture) {
-						texture.wrapT = THREE.RepeatWrapping;
-						texture.repeat.y = tex.repeatY;
-						vm.wallMaterials.push(new THREE.MeshLambertMaterial({ map: texture }));
-					},
-					undefined,
-					function(error) {
-						console.log(error);
-					}
-				);
-			}
 
 			// Ambient Light
 			this.ambientLight = new THREE.AmbientLight(0xffffff, 1);
@@ -653,7 +595,7 @@ export default {
 							return this.grid[i][j];
 						},
 						this.nodeWatcher,
-						{ deep: true }
+						{ deep: true, immediate: true }
 					);
 				}
 			}
@@ -673,111 +615,40 @@ export default {
 				status = "finish";
 			}
 
-			// Node info
-			let node = {
-				id: row * this.cols + col,
-				row: row,
-				col: col,
-				faces: faces,
-				status: status,
-				distance: Infinity,
-				totalDistance: Infinity,
-				heuristicDistance: null,
-				direction: null,
-				weight: 0,
-				previousNode: null,
-			};
-
-			if (status == "start") {
-				tweenToColor(node, this.ground.geometry, [this.colors.start]);
-			} else if (status == "finish") {
-				tweenToColor(node, this.ground.geometry, [this.colors.finish]);
-			}
+			// New Node object
+			let node = new Node(row, col, faces, status);
 
 			return node;
 		},
 
 		nodeWatcher(newVal, oldVal) {
-			// console.log('WATCHER', newVal);
 			if (this.visualizerState == "running") return;
-			this.updateNode(newVal, this.streaming);
+			newVal.updateNode(this.streaming);
+			this.computeInteractableObjects(newVal);
 		},
 
-		updateNode(node, instant = false) {
-			if (node.status == "wall") {
-				let scaleY = 0.5 + Math.random();
-				if(!instant) {
-					this.addWall(node, scaleY, instant ? 0 : 1000);
+		computeInteractableObjects(node) {
+			let index;
+			const wall = this.scene.getObjectById(node.wallMeshId);
+			if(node.status == "wall") {
+				index = this.clickableObjects.indexOf(wall);
+				if(index == -1) {
+					this.clickableObjects.push(wall);
 				}
-				tweenToColor(node, this.ground.geometry, [this.colors.wall]);
-			} else if (node.status == "start") {
-				tweenToColor(node, this.ground.geometry, [this.colors.start]);
-			} else if (node.status == "finish") {
-				tweenToColor(node, this.ground.geometry, [this.colors.finish]);
-			} else if (node.status == "visited") {
-				tweenToColor(node, this.ground.geometry, [this.colors.visited]);
-			} else {
-				if (this.walls[node.id] != null && this.walls[node.id].visible && !instant) {
-					this.hideWall(this.walls[node.id]);
+				index = this.collidableObjects.indexOf(wall);
+				if(index == -1) {
+					this.collidableObjects.push(wall);
 				}
-				tweenToColor(node, this.ground.geometry, [this.colors.default]);
-			}
-		},
-
-		addWall(node, scaleY, duration) {
-			if (!!this.walls[node.id]) {
-				if(!this.walls[node.id].visible) {
-					this.showWall(this.walls[node.id], scaleY, duration);
+			} else {
+				index = this.clickableObjects.indexOf(wall);
+				if(index != -1) {
+					this.clickableObjects.splice(index, 1);
 				}
-				return;
+				index = this.collidableObjects.indexOf(wall);
+				if(index != -1) {
+					this.collidableObjects.splice(index, 1);
+				}
 			}
-
-			let materialId = 1 + Math.floor(Math.random() * (this.wallMaterials.length - 1));
-			let wall = new THREE.Mesh(this.wallGeomtery, this.wallMaterials[materialId]);
-			wall.name = "wall";
-			wall.wallId = node.id;
-			wall.scale.y = scaleY;
-			wall.castShadow = true;
-			wall.receiveShadow = true;
-			this.scene.add(wall);
-			this.$set(this.walls, node.id, wall);
-
-			let gridWidth = this.cols * this.nodeDimensions.width;
-			let gridHeight = this.rows * this.nodeDimensions.height;
-			let height = this.wallGeomtery.parameters.height * wall.scale.y;
-			let x = -gridWidth / 2 + this.nodeDimensions.width / 2 + node.col * this.nodeDimensions.width,
-				y = height / 2,
-				z =
-					-gridHeight / 2 + this.nodeDimensions.height / 2 + node.row * this.nodeDimensions.height;
-			
-			if(duration == 0) {
-				wall.position.set(x, y, z);
-			} else {
-				wall.position.set(x, height, z);
-				new TWEEN.Tween(wall.position)
-					.to({ x: x, y: y, z: z }, duration)
-					.easing(TWEEN.Easing.Bounce.Out)
-					.start();
-			}
-		},
-
-		showWall(wall, scaleY, duration) {
-			wall.scale.y = scaleY;
-			let height = wall.geometry.parameters.height * wall.scale.y;
-			wall.visible = true;
-			if(duration == 0) {
-				wall.position.setY(height/2);
-			} else {
-				wall.position.setY(height);
-				new TWEEN.Tween(wall.position)
-					.to({ y: height / 2 }, duration)
-					.easing(TWEEN.Easing.Bounce.Out)
-					.start();
-			}
-		},
-
-		hideWall(wall) {
-			wall.visible = false;
 		},
 
 		onMouseDown(event) {

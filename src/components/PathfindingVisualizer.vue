@@ -43,12 +43,22 @@
 				<img class="fallback-icon" src="@/assets/icons/path.svg" alt="" />
 				<span class="lg">Visualize!</span>
 			</Button>
-			<Button class="danger" @click="clearPath" key="clear-path" :disabled="visualizerState == 'running'">
+			<Button
+				class="danger"
+				@click="clearPath"
+				key="clear-path"
+				:disabled="visualizerState == 'running'"
+			>
 				<img class="fallback-icon" src="@/assets/icons/cross.svg" alt="" />
 				<span class="lg">Clear path</span>
 				<span class="sm">path</span>
 			</Button>
-			<Button class="danger" @click="clearWalls" key="clear-walls" :disabled="visualizerState == 'running'">
+			<Button
+				class="danger"
+				@click="clearWalls"
+				key="clear-walls"
+				:disabled="visualizerState == 'running'"
+			>
 				<img class="fallback-icon" src="@/assets/icons/cross.svg" alt="" />
 				<span class="lg">Clear walls</span>
 				<span class="sm">walls</span>
@@ -121,7 +131,15 @@
 
 		<canvas id="video-canvas"></canvas>
 		<video id="video" autoplay></video>
-		<input id="threshold" ref="threshold" v-if="deviceCamInput" type="range" min="0" max="255" v-model="thresholdValue">
+		<input
+			id="threshold"
+			ref="threshold"
+			v-if="deviceCamInput"
+			type="range"
+			min="0"
+			max="255"
+			v-model="thresholdValue"
+		/>
 
 		<Info ref="info" :colors="colors" @unlockSwarm="unlockSwarm"></Info>
 	</div>
@@ -129,85 +147,27 @@
 
 <script>
 import VisualizerCanvas from "./VisualizerCanvas.vue";
-import Info from '@/components/UI/Info.vue';
-import * as THREE from "three";
+import Info from "@/components/UI/Info.vue";
+import THREE from "./Utils/ThreeInstance.js";
 import TWEEN from "@tweenjs/tween.js";
 
-import { getNodesInShortestPathOrder, tweenToColor } from "./algorithms/helpers.js";
+import { getNodesInShortestPathOrder } from "./algorithms/helpers.js";
 import { weightedSearchAlgorithm } from "./algorithms/weightedSearchAlgorithm.js";
 import { unweightedSearchAlgorithm } from "./algorithms/unweightedSearchAlgorithm.js";
 import { randomMaze, recursiveDivisionMaze } from "./algorithms/mazeAlgorithms.js";
-
+import ALGORITHMS from "./algorithms/algorithmsInfo.json";
+import SWARM from "./algorithms/swarmInfo.json";
+import CONFIG from "./config.js";
 
 export default {
 	components: {
 		VisualizerCanvas,
-		Info
+		Info,
 	},
 	data: () => ({
 		visualizerState: "clear", // clear/running/finished
-		algorithms: [
-			{
-				algorithm: "dijkstra",
-				heuristic: "",
-				displayName: "Dijkstra's Algorithm",
-				type: "weighted",
-				info: {
-					heading: "Dijkstra's Algorithm",
-					text: `The father of pathfinding algorithms, Dijkstra’s algorithm creates a tree of shortest paths from the starting vertex, the source, to all other points in the graph.
-					<br><br>
-					It is a <b>weighted</b> algorithm and <b>guarantees</b> the shortest path!`
-				}
-			},
-			{
-				algorithm: "astar",
-				heuristic: "poweredManhattanDistance",
-				displayName: "A* Search",
-				type: "weighted",
-				info: {
-					heading: "A* Search Algorithm",
-					text: `A* Search algorithm is one of the best and popular technique used in path-finding and graph traversals. A* algorithm introduces a heuristic into a regular graph-searching algorithm, essentially planning ahead at each step so a more optimal decision is made.
-					<br><br>
-					It is a <b>weighted</b> algorithm and <b>guarantees</b> the shortest path!`
-				}
-			},
-			{
-				algorithm: "bfs",
-				heuristic: "",
-				displayName: "Breadth-first Search",
-				type: "unweighted",
-				info: {
-					heading: "Breadth-first Search",
-					text: `Breadth-first search is an algorithm for traversing or searching tree or graph data structures. It starts at the tree root, and explores all of the neighbor nodes at the present depth prior to moving on to the nodes at the next depth level.
-					<br><br>
-					It is an <b>unweighted</b> algorithm and <b>guarantees</b> the shortest path!`
-				}
-			},
-			{
-				algorithm: "dfs",
-				heuristic: "",
-				displayName: "Depth-first Search",
-				type: "unweighted",
-				info: {
-					heading: "Depth-first Search",
-					text: `Depth-first search is an algorithm for traversing or searching tree or graph data structures. The algorithm starts at the root node and explores as far as possible along each branch before backtracking.
-					<br><br>
-					It is an <b>unweighted</b> algorithm and <b>does not guarantee</b> the shortest path!`
-				}
-			},
-		],
-		swarm: {
-			algorithm: "CLA",
-			heuristic: "manhattanDistance",
-			displayName: "Swarm Algorithm",
-			type: "weighted",
-			info: {
-				heading: "Swarm Algorithm",
-				text: `The Swarm Algorithm, presumably developed by Clément Mihailescu and Hussein Farah, is essentially a mixture of Dijkstra's Algorithm and A* Search. More precisely, while it converges to the target node like A*, it still explores quite a few neighboring nodes surrounding the start node like Dijkstra's.
-				<br><br>
-				It is a <b>weighted</b> algorithm and <b>does not guarantee</b> the shortest path!`
-			}
-		},
+		algorithms: [],
+		swarm: null,
 		selectedAlgorithm: null,
 		speeds: [
 			{
@@ -230,40 +190,24 @@ export default {
 		selectedSpeed: null,
 		mazeAlgorithms: ["Random Maze", "Recursive Division"],
 		dropdownOpen: false,
-		nodeDimensions: {
-			height: 8,
-			width: 8,
-		},
-		rows: 30,
-		cols: 30,
+		nodeDimensions: null,
+		rows: null,
+		cols: null,
+		start: null,
+		finish: null,
 		grid: [],
 		ground: null,
 		controlType: "Orbit", // Orbit/PointerLock
-		start: {
-			row: 3,
-			col: 5,
-		},
-		finish: {
-			row: 16,
-			col: 22,
-		},
 		worldSetup: false,
 		deviceCamInput: false,
 		streaming: false,
 		thresholdValue: 100,
-		colors: {
-			default: { r: 1, g: 1, b: 1 },
-			start: { r: 0, g: 1, b: 0 },
-			finish: { r: 1, g: 0, b: 0 },
-			wall: { r: 0.109, g: 0.109, b: 0.45 },
-			visited: { r: 0.329, g: 0.27, b: 0.968 },
-			path: { r: 1, g: 1, b: 0 },
-		},
-		infoStatus: '',
+		colors: null,
+		infoStatus: "",
 		infoObject: {
 			heading: "",
-			text: ""
-		}
+			text: "",
+		},
 	}),
 	watch: {
 		selectedAlgorithm: function(newVal, oldVal) {
@@ -274,45 +218,43 @@ export default {
 			this.$refs.info.resetToLegends();
 		},
 		worldSetup: function(newVal, oldVal) {
-			if(newVal) {
+			if (newVal) {
 				this.clearPath();
 			} else {
 				this.deviceCamInput = false;
 			}
 		},
 		deviceCamInput: function(newVal, oldVal) {
-			if(newVal) {
+			if (newVal) {
 				function hasGetUserMedia() {
-					return !!(navigator.mediaDevices &&
-						navigator.mediaDevices.getUserMedia);
+					return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
 				}
 
 				this.clearWalls();
 
-				const videoCanvas = document.querySelector('#video-canvas');
+				const videoCanvas = document.querySelector("#video-canvas");
 				let videoCtx = videoCanvas.getContext("2d");
-				const video = document.querySelector('video');
+				const video = document.querySelector("video");
 				this.thresholdValue = 100;
 				const scale = 17;
 				const width = 512;
 				const height = 512;
 				if (hasGetUserMedia()) {
-					videoCanvas.width = width/scale;
-					videoCanvas.height = height/scale;
+					videoCanvas.width = width / scale;
+					videoCanvas.height = height / scale;
 					const constraints = {
-						video: { width: { exact: width/scale }, height: { exact: height/scale } }
+						video: { width: { exact: width / scale }, height: { exact: height / scale } },
 					};
 
-					navigator.mediaDevices.getUserMedia(constraints)
-						.then((stream) => {
-							video.srcObject = stream;
-							this.streaming = true;
-						});
+					navigator.mediaDevices.getUserMedia(constraints).then((stream) => {
+						video.srcObject = stream;
+						this.streaming = true;
+					});
 				} else {
-					alert('getUserMedia() is not supported by your browser');
+					alert("getUserMedia() is not supported by your browser");
 				}
 			} else {
-				const video = document.querySelector('video');
+				const video = document.querySelector("video");
 				const stream = video.srcObject;
 				const tracks = stream.getTracks();
 
@@ -323,22 +265,35 @@ export default {
 				video.srcObject = null;
 				this.streaming = false;
 			}
-		}
+		},
 	},
+
 	created() {
+		// Initialization
+		this.nodeDimensions = CONFIG.NODEDIMENSIONS;
+		this.rows = CONFIG.ROWS;
+		this.cols = CONFIG.COLS;
+		this.start = CONFIG.START;
+		this.finish = CONFIG.FINISH;
+		this.colors = CONFIG.COLORS;
+		this.algorithms = ALGORITHMS;
+		this.swarm = SWARM;
+
+		// Computed initialization
 		this.selectedAlgorithm = this.algorithms[0];
 		this.start.gridId = this.start.row * this.cols + this.start.col;
 		this.finish.gridId = this.finish.row * this.cols + this.finish.col;
 		this.selectedSpeed = this.speeds[0];
 	},
+
 	methods: {
 		onClick(node) {
 			let vm = this;
 			if (this.visualizerState == "running") return;
-			if(this.selectedAlgorithm.type == "unweighted") {
+			if (this.selectedAlgorithm.type == "unweighted") {
 				this.$refs.info.error({
 					heading: "Uh oh",
-					text: "Can't add walls in an unweighted algorithm."
+					text: "Can't add walls in an unweighted algorithm.",
 				});
 				return;
 			}
@@ -351,13 +306,13 @@ export default {
 		},
 
 		onMazeDropdownClick() {
-			if(this.selectedAlgorithm.type != 'unweighted') {
+			if (this.selectedAlgorithm.type != "unweighted") {
 				this.dropdownOpen = !this.dropdownOpen;
 			} else {
 				this.dropdownOpen = false;
 				this.$refs.info.error({
 					heading: "Uh oh",
-					text: "Can't add walls in an unweighted algorithm."
+					text: "Can't add walls in an unweighted algorithm.",
 				});
 			}
 		},
@@ -373,7 +328,7 @@ export default {
 		},
 
 		unlockSwarm() {
-			console.log('Unlocked Swarm');
+			console.log("Unlocked Swarm");
 			this.algorithms.push(this.swarm);
 		},
 
@@ -417,33 +372,35 @@ export default {
 				setTimeout(() => {
 					this.$refs.info.alert({
 						heading: "Start First-Person",
-						text: "Click anywhere on the canvas to start the First-Person mouse movement. Press Esc to exit."
+						text:
+							"Click anywhere on the canvas to start the First-Person mouse movement. Press Esc to exit.",
 					});
-				}, 2000)
+				}, 2000);
 			} else {
 				this.controlType = "Orbit";
 				this.$refs.info.resetToLegends();
 			}
 		},
 
-		moveCamera() {
-			this.$refs.visualizer.controls.enabled = false;
-			new TWEEN.Tween(this.$refs.visualizer.camera.position)
-				.to({ x: -100, y: 200, z: 100 }, 2000)
-				.easing(TWEEN.Easing.Exponential.Out)
-				.onUpdate(() => {
-					this.$refs.visualizer.camera.lookAt(this.$refs.visualizer.scene.position);
-					// this.$refs.visualizer.controls.update();
-				})
-				.onComplete(() => {
-					this.$refs.visualizer.controls.enabled = true;
-				})
-				.start();
-			// new TWEEN.Tween(this.$refs.visualizer.camera.rotation)
-			// 	.to({ x: -(Math.PI/3), y: -(Math.PI/8), z: 0 }, 2000)
-			// 	.easing(TWEEN.Easing.Exponential.Out)
-			// 	.start();
-		},
+		/* To move the camera in a cinematic way after clicking Visualize */
+		// moveCamera() {
+		// 	this.$refs.visualizer.controls.enabled = false;
+		// 	new TWEEN.Tween(this.$refs.visualizer.camera.position)
+		// 		.to({ x: -100, y: 200, z: 100 }, 2000)
+		// 		.easing(TWEEN.Easing.Exponential.Out)
+		// 		.onUpdate(() => {
+		// 			this.$refs.visualizer.camera.lookAt(this.$refs.visualizer.scene.position);
+		// 			// this.$refs.visualizer.controls.update();
+		// 		})
+		// 		.onComplete(() => {
+		// 			this.$refs.visualizer.controls.enabled = true;
+		// 		})
+		// 		.start();
+		// 	// new TWEEN.Tween(this.$refs.visualizer.camera.rotation)
+		// 	// 	.to({ x: -(Math.PI/3), y: -(Math.PI/8), z: 0 }, 2000)
+		// 	// 	.easing(TWEEN.Easing.Exponential.Out)
+		// 	// 	.start();
+		// },
 
 		visualizeAlgorithm() {
 			let timerDelay = this.selectedSpeed.value;
@@ -462,7 +419,7 @@ export default {
 						finishNode,
 						nodesToAnimate,
 						this.selectedAlgorithm.algorithm,
-						this.selectedAlgorithm.heuristic,
+						this.selectedAlgorithm.heuristic
 					);
 				} else {
 					this.clearWalls();
@@ -480,7 +437,7 @@ export default {
 					this.visualizerState = "finished";
 					this.$refs.info.error({
 						heading: "Uh oh",
-						text: "Can't find the path when one end is unreachable."
+						text: "Can't find the path when one end is unreachable.",
 					});
 					return;
 				}
@@ -510,13 +467,9 @@ export default {
 				setTimeout(() => {
 					const node = visitedNodesInOrder[i];
 					if (!node) return;
-					tweenToColor(
-						node,
-						this.ground.geometry,
-						[{ r: 1.0, g: 0.321, b: 0.784 }, this.colors.visited],
-						300,
-						{ position: false }
-					);
+					node.tweenToColor([{ r: 1.0, g: 0.321, b: 0.784 }, this.colors.visited], 300, {
+						position: false,
+					});
 				}, timerDelay * i);
 			}
 		},
@@ -526,7 +479,7 @@ export default {
 			for (let i = 0; i < nodesInShortestPathOrder.length; i++) {
 				setTimeout(() => {
 					const node = nodesInShortestPathOrder[i];
-					tweenToColor(node, this.ground.geometry, [this.colors.path], undefined, {
+					node.tweenToColor([this.colors.path], undefined, {
 						position: false,
 					});
 					if (i == nodesInShortestPathOrder.length - 1) {
@@ -577,7 +530,7 @@ export default {
 </script>
 
 <style lang="scss">
-@import '@/scss/variables.scss';
+@import "@/scss/variables.scss";
 
 .pathfinding-visualizer {
 	width: 100vw;
@@ -596,7 +549,7 @@ export default {
 		z-index: 1;
 
 		&::before {
-			content: '';
+			content: "";
 			position: absolute;
 			top: -100%;
 			left: 0;
@@ -733,8 +686,8 @@ export default {
 		width: 80px;
 		height: 80px;
 		transform: rotateY(180deg);
-    -webkit-transform:rotateY(180deg); /* Safari and Chrome */
-    -moz-transform:rotateY(180deg); /* Firefox */
+		-webkit-transform: rotateY(180deg); /* Safari and Chrome */
+		-moz-transform: rotateY(180deg); /* Firefox */
 	}
 	#threshold {
 		position: absolute;

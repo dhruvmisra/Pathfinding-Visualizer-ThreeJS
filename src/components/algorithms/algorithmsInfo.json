@@ -1,0 +1,42 @@
+[
+	{
+		"algorithm": "dijkstra",
+		"heuristic": "",
+		"displayName": "Dijkstra's Algorithm",
+		"type": "weighted",
+		"info": {
+			"heading": "Dijkstra's Algorithm",
+			"text": "The father of pathfinding algorithms, Dijkstra’s algorithm creates a tree of shortest paths from the starting vertex, the source, to all other points in the graph.\n\t\t\t\t\t<br><br>\n\t\t\t\t\tIt is a <b>weighted</b> algorithm and <b>guarantees</b> the shortest path!"
+		}
+	},
+	{
+		"algorithm": "astar",
+		"heuristic": "poweredManhattanDistance",
+		"displayName": "A* Search",
+		"type": "weighted",
+		"info": {
+			"heading": "A* Search Algorithm",
+			"text": "A* Search algorithm is one of the best and popular technique used in path-finding and graph traversals. A* algorithm introduces a heuristic into a regular graph-searching algorithm, essentially planning ahead at each step so a more optimal decision is made.\n\t\t\t\t\t<br><br>\n\t\t\t\t\tIt is a <b>weighted</b> algorithm and <b>guarantees</b> the shortest path!"
+		}
+	},
+	{
+		"algorithm": "bfs",
+		"heuristic": "",
+		"displayName": "Breadth-first Search",
+		"type": "unweighted",
+		"info": {
+			"heading": "Breadth-first Search",
+			"text": "Breadth-first search is an algorithm for traversing or searching tree or graph data structures. It starts at the tree root, and explores all of the neighbor nodes at the present depth prior to moving on to the nodes at the next depth level.\n\t\t\t\t\t<br><br>\n\t\t\t\t\tIt is an <b>unweighted</b> algorithm and <b>guarantees</b> the shortest path!"
+		}
+	},
+	{
+		"algorithm": "dfs",
+		"heuristic": "",
+		"displayName": "Depth-first Search",
+		"type": "unweighted",
+		"info": {
+			"heading": "Depth-first Search",
+			"text": "Depth-first search is an algorithm for traversing or searching tree or graph data structures. The algorithm starts at the root node and explores as far as possible along each branch before backtracking.\n\t\t\t\t\t<br><br>\n\t\t\t\t\tIt is an <b>unweighted</b> algorithm and <b>does not guarantee</b> the shortest path!"
+		}
+	}
+]

@@ -1,0 +1,10 @@
+{
+	"algorithm": "CLA",
+	"heuristic": "manhattanDistance",
+	"displayName": "Swarm Algorithm",
+	"type": "weighted",
+	"info": {
+		"heading": "Swarm Algorithm",
+		"text": "The Swarm Algorithm, presumably developed by Clément Mihailescu and Hussein Farah, is essentially a mixture of Dijkstra's Algorithm and A* Search. More precisely, while it converges to the target node like A*, it still explores quite a few neighboring nodes surrounding the start node like Dijkstra's.\n\t\t\t\t<br><br>\n\t\t\t\tIt is a <b>weighted</b> algorithm and <b>does not guarantee</b> the shortest path!"
+	}
+}
