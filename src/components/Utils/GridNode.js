@@ -153,7 +153,6 @@ export default class Node {
 	hideWall() {
 		THREE.VisualizerInstance.scene.getObjectById(this.wallMeshId).visible = false;
 	}
-
 	
 	tweenToColor(colors, duration = 300, options) {
 		let groundId = THREE.VisualizerInstance.groundId;

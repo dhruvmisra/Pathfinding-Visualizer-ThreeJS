@@ -1,3 +1,4 @@
+// Returns an array of all nodes
 export function getAllNodes(grid) {
 	const nodes = [];
 	for (const row of grid) {
@@ -6,8 +7,7 @@ export function getAllNodes(grid) {
 	return nodes;
 }
 
-// Backtracks from the finishNode to find the shortest path.
-// Only works when called *after* the pathfinding method.
+// Backtracks from the finishNode to find the shortest path
 export function getNodesInShortestPathOrder(finishNode) {
 	const nodesInShortestPathOrder = [];
 	let currentNode = finishNode;
@@ -15,11 +15,7 @@ export function getNodesInShortestPathOrder(finishNode) {
 	if(currentNode.previousNode != null) {
 		currentNode = currentNode.previousNode;
 	}
-	while (currentNode !== null) {
-		// Excluding start node
-		if(currentNode.previousNode === null) {
-			break;
-		}
+	while (currentNode !== null && currentNode.previousNode !== null) {
 		nodesInShortestPathOrder.unshift(currentNode);
 		currentNode = currentNode.previousNode;
 	}

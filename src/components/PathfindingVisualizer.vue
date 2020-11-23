@@ -1,5 +1,5 @@
 <template>
-	<div class="pathfinding-visualizer" @click="clearFocus">
+	<div class="pathfinding-visualizer">
 		<VisualizerCanvas
 			ref="visualizer"
 			:nodeDimensions="nodeDimensions"
@@ -16,7 +16,6 @@
 			:streaming="streaming"
 			:thresholdValue="thresholdValue"
 			@clickEvent="onClick"
-			@groundInitialized="ground = $event"
 			@switchWorldSetup="worldSetup = !worldSetup"
 			@switchControlType="controlType = controlType == 'Orbit' ? 'PointerLock' : 'Orbit'"
 			@updateEnds="updateEnds"
@@ -196,14 +195,12 @@ export default {
 		start: null,
 		finish: null,
 		grid: [],
-		ground: null,
 		controlType: "Orbit", // Orbit/PointerLock
 		worldSetup: false,
 		deviceCamInput: false,
 		streaming: false,
 		thresholdValue: 100,
 		colors: null,
-		infoStatus: "",
 		infoObject: {
 			heading: "",
 			text: "",
@@ -317,13 +314,13 @@ export default {
 			}
 		},
 
-		updateEnds(obj) {
-			if (obj.start) {
-				this.start = obj.start;
-				this.start.gridId = obj.start.row * this.cols + obj.start.col;
+		updateEnds(nodeObj) {
+			if (nodeObj.start) {
+				this.start = nodeObj.start;
+				this.start.gridId = nodeObj.start.row * this.cols + nodeObj.start.col;
 			} else {
-				this.finish = obj.finish;
-				this.finish.gridId = obj.finish.row * this.cols + obj.finish.col;
+				this.finish = nodeObj.finish;
+				this.finish.gridId = nodeObj.finish.row * this.cols + nodeObj.finish.col;
 			}
 		},
 
@@ -498,6 +495,7 @@ export default {
 			if (algo == "Random Maze") {
 				randomMaze(this.grid, nodesToAnimate, "wall");
 			} else {
+				// Parameters: 2, this.grid.length-3 => First row and col after leaving 1 from the boundary
 				recursiveDivisionMaze(
 					this.grid,
 					2,
@@ -520,12 +518,8 @@ export default {
 					node.status = type;
 				}, timerDelay * i);
 			}
-		},
-
-		clearFocus() {
-			document.getElementsByClassName("header")[0].click();
-		},
-	},
+		}
+	}
 };
 </script>
 

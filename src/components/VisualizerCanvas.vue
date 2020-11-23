@@ -1,5 +1,5 @@
 <template>
-	<div id="visualizer" @click="controlType == 'PointerLock' ? controls.lock() : clearFocus">
+	<div id="visualizer" @click="controlType == 'PointerLock' ? controls.lock() : null">
 		<script type="x-shader/x-vertex" id="vertexShader">
 			varying vec3 vWorldPosition;
 
@@ -207,7 +207,6 @@ export default {
 					THREE.VisualizerInstance.groundId = vm.ground.id;
 					vm.initGrid();
 					vm.clickableObjects.push(vm.ground);
-					vm.$emit("groundInitialized", vm.ground);
 				},
 				undefined,
 				function(error) {
@@ -217,7 +216,6 @@ export default {
 			let fakeGroundGeometry = new THREE.PlaneGeometry(1000, 1000, this.cols, this.rows);
 			fakeGroundGeometry.rotateX(-Math.PI / 2);
 			var fakeGroundMaterial = new THREE.MeshLambertMaterial({
-				// color: 0x87775d,
 				color: 0xBBC2D0,
 				side: THREE.FrontSide,
 			});
@@ -656,7 +654,6 @@ export default {
 			this.moved = false;
 			this.currentEvent = event;
 			this.setMouseVector(event, "move");
-			this.clearFocus();
 		},
 		onMouseMove(event) {
 			if (!this.down) return;
@@ -736,13 +733,9 @@ export default {
 		faceIndexToCoordinates(faceIndex) {
 			// As each node has 2 faces
 			return {
-				row: Math.floor(faceIndex / 2 / this.rows),
+				row: Math.floor((faceIndex / 2) / this.cols),
 				col: Math.floor((faceIndex / 2) % this.cols),
 			};
-		},
-
-		clearFocus() {
-			document.getElementsByClassName("header")[0].click();
 		},
 
 		onKeyDown(event) {
@@ -811,8 +804,8 @@ export default {
 					this.pointerLock.moveRight = false;
 					break;
 			}
-		},
-	},
+		}
+	}
 };
 </script>
 
