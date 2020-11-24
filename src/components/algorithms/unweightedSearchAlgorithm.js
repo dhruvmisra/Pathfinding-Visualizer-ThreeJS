@@ -7,7 +7,7 @@ export function unweightedSearchAlgorithm(grid, start, target, nodesToAnimate, n
     if (name === "dfs") exploredNodes[currentNode.id] = true;
 		currentNode.status = "visited";
 		// Ending condition
-		if (currentNode.id === target.id) return "success!";
+		if (currentNode.id === target.id) return true;
 		// Update neighbors
     let currentNeighbors = getNeighbors(currentNode, grid, name);
     currentNeighbors.forEach(neighbor => {

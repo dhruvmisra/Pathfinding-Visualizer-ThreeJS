@@ -69,17 +69,18 @@ export default class Node {
 	updateNode(instant = false) {
 		switch(this.status) {
 			case "wall":
-				let scaleY = 0.5 + Math.random();
-				if (this.wallMeshId != null) {
-					let wallVisible = THREE.VisualizerInstance.scene.getObjectById(this.wallMeshId).visible;
-					if(!wallVisible) {
-						this.showWall(scaleY, instant ? 0 : 1000);
-						this.tweenToColor([CONFIG.COLORS.wall]);
+				if(!instant) {
+					let scaleY = 0.5 + Math.random();
+					if (this.wallMeshId != null) {
+						let wallVisible = THREE.VisualizerInstance.scene.getObjectById(this.wallMeshId).visible;
+						if(!wallVisible) {
+							this.showWall(scaleY, instant ? 0 : 1000);
+						}
+					} else {
+						this.addWall(scaleY, instant ? 0 : 1000);
 					}
-				} else {
-					this.addWall(scaleY, instant ? 0 : 1000);
-					this.tweenToColor([CONFIG.COLORS.wall]);
 				}
+				this.tweenToColor([CONFIG.COLORS.wall]);
 				break;
 			
 			case "start":

@@ -18,7 +18,7 @@ export function weightedSearchAlgorithm(grid, start, target, nodesToAnimate, nam
     nodesToAnimate.push(currentNode);
 		currentNode.status = "visited";
 		// Ending condition
-		if (currentNode.id === target.id) return "success!";
+		if (currentNode.id === target.id) return true;
 		// Updating neighbors
     if (name === "CLA" || name === "greedy" || name == "astar") {
       updateNeighbors(grid, currentNode, start, target, name, heuristic);
