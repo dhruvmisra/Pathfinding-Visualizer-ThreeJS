@@ -28,6 +28,10 @@ export default {
   color: rgb(255, 255, 255);
 	border: none;
 	border-radius: 3px;
+	font-size: 0.7em;
+	font-weight: 600;
+	text-transform: uppercase;
+	margin: 2px;
 	height: 40px;
 	cursor: pointer;
   transition: all 150ms ease-out;
@@ -45,6 +49,12 @@ export default {
 	}
 	span {
 		margin: 0 10px;
+	}
+	.lg {
+		display: block;
+	}
+	.sm {
+		display: none;
 	}
 }
 

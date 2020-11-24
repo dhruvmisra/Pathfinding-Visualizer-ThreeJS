@@ -8,8 +8,8 @@
 			:grid="grid"
 			:start="start"
 			:finish="finish"
-			:visualizerState="visualizerState"
 			:colors="colors"
+			:visualizerState="visualizerState"
 			:controlType="controlType"
 			:worldSetup="worldSetup"
 			:selectedAlgorithm="selectedAlgorithm"
@@ -20,113 +20,25 @@
 			@switchControlType="controlType = controlType == 'Orbit' ? 'PointerLock' : 'Orbit'"
 			@updateEnds="updateEnds"
 		/>
-		<transition-group name="slide" mode="out-in" tag="div" class="header py-1">
-			<select
-				id="algorithms"
-				v-model="selectedAlgorithm"
-				:disabled="visualizerState == 'running'"
-				key="algo-select"
-				v-if="!worldSetup"
-			>
-				<option :value="algo" v-for="algo in algorithms" :key="algo.algorithm">{{
-					algo.displayName
-				}}</option>
-			</select>
-			<Button
-				class="accent"
-				@click="visualizeAlgorithm()"
-				:disabled="visualizerState == 'running' || worldSetup"
-				key="visualize"
-				v-if="!worldSetup"
-			>
-				<img class="fallback-icon" src="@/assets/icons/path.svg" alt="" />
-				<span class="lg">Visualize!</span>
-			</Button>
-			<Button
-				class="danger"
-				@click="clearPath"
-				key="clear-path"
-				:disabled="visualizerState == 'running'"
-			>
-				<img class="fallback-icon" src="@/assets/icons/cross.svg" alt="" />
-				<span class="lg">Clear path</span>
-				<span class="sm">path</span>
-			</Button>
-			<Button
-				class="danger"
-				@click="clearWalls"
-				key="clear-walls"
-				:disabled="visualizerState == 'running'"
-			>
-				<img class="fallback-icon" src="@/assets/icons/cross.svg" alt="" />
-				<span class="lg">Clear walls</span>
-				<span class="sm">walls</span>
-			</Button>
-			<div class="maze-dropdown" key="maze-select">
-				<Button class="info btn-maze" @click="onMazeDropdownClick">
-					<img class="fallback-icon" src="@/assets/icons/maze.svg" alt="" />
-					<span class="lg">Maze Algorithms</span>
-				</Button>
-				<div class="dropdown" v-if="dropdownOpen">
-					<div
-						class="dropdown-item"
-						v-for="algo in mazeAlgorithms"
-						:key="algo"
-						@click="generateMaze(algo)"
-					>
-						{{ algo }}
-					</div>
-				</div>
-			</div>
-			<select
-				id="algorithms"
-				v-model="selectedSpeed"
-				:disabled="visualizerState == 'running'"
-				key="speed-select"
-				v-if="!worldSetup"
-			>
-				<option :value="speed" v-for="speed in speeds" :key="speed.text">{{ speed.text }}</option>
-			</select>
-		</transition-group>
-		<Button
-			class="hover btn-setup warning"
-			:class="{ setup: worldSetup }"
-			key="setup"
-			v-if="controlType != 'PointerLock'"
-			@click="worldSetup = !worldSetup"
-		>
-			<img src="@/assets/icons/setup.svg" alt="" />
-			<span class="lg">{{ worldSetup ? "Complete Setup" : "Setup World" }}</span>
-		</Button>
-		<Button
-			class="hover btn-controls warning"
-			key="switch-controls"
-			v-if="!worldSetup"
-			@click="switchControl"
-		>
-			<img src="@/assets/icons/street-view.svg" alt="" v-if="controlType == 'Orbit'" />
-			<img src="@/assets/icons/perspective.svg" alt="" v-else />
-			<span class="lg">{{ controlType == "Orbit" ? "First-person" : "Perspective" }}</span>
-		</Button>
-		<Button
-			class="hover btn-camera warning"
-			key="reset-camera"
-			v-if="controlType == 'Orbit'"
-			@click="$refs.visualizer.resetCamera()"
-		>
-			<img src="@/assets/icons/reset-camera.svg" alt="" />
-			<span class="lg">Reset Camera</span>
-		</Button>
-		<Button
-			class="hover btn-device-cam warning"
-			:class="{ active: deviceCamInput }"
-			key="device-camera"
-			v-if="worldSetup"
-			@click="deviceCamInput = !deviceCamInput"
-		>
-			<img src="@/assets/icons/camera.svg" alt="" />
-			<span class="lg">{{ "Device Input" }}</span>
-		</Button>
+		<InteractionUI 
+			:visualizerState="visualizerState"
+			:controlType="controlType"
+			:worldSetup.sync="worldSetup"
+			:algorithms="algorithms"
+			:selectedAlgorithm.sync="selectedAlgorithm"
+			:mazeAlgorithms="mazeAlgorithms"
+			:speeds="speeds"
+			:selectedSpeed.sync="selectedSpeed"
+			:deviceCamInput.sync="deviceCamInput"
+			:dropdownOpen="dropdownOpen"
+			@visualize-algorithm="visualizeAlgorithm"
+			@clear-path="clearPath"
+			@clear-walls="clearWalls"
+			@maze-dropdown-clicked="onMazeDropdownClick"
+			@generate-maze="generateMaze"
+			@switch-control="switchControl"
+			@reset-camera="$refs.visualizer.resetCamera()"
+		/>
 
 		<canvas id="video-canvas"></canvas>
 		<video id="video" autoplay></video>
@@ -145,10 +57,11 @@
 </template>
 
 <script>
-import VisualizerCanvas from "./VisualizerCanvas.vue";
-import Info from "@/components/UI/Info.vue";
 import THREE from "./Utils/ThreeInstance.js";
 import TWEEN from "@tweenjs/tween.js";
+import VisualizerCanvas from "./VisualizerCanvas.vue";
+import InteractionUI from "@/components/UI/InteractionUI.vue";
+import Info from "@/components/UI/Info.vue";
 
 import { getNodesInShortestPathOrder } from "./algorithms/helpers.js";
 import { weightedSearchAlgorithm } from "./algorithms/weightedSearchAlgorithm.js";
@@ -161,6 +74,7 @@ import CONFIG from "./config.js";
 export default {
 	components: {
 		VisualizerCanvas,
+		InteractionUI,
 		Info,
 	},
 	data: () => ({
@@ -314,13 +228,13 @@ export default {
 			}
 		},
 
-		updateEnds(nodeObj) {
-			if (nodeObj.start) {
-				this.start = nodeObj.start;
-				this.start.gridId = nodeObj.start.row * this.cols + nodeObj.start.col;
+		updateEnds(coordsToUpdate) {
+			if (coordsToUpdate.start) {
+				this.start = coordsToUpdate.start;
+				this.start.gridId = coordsToUpdate.start.row * this.cols + coordsToUpdate.start.col;
 			} else {
-				this.finish = nodeObj.finish;
-				this.finish.gridId = nodeObj.finish.row * this.cols + nodeObj.finish.col;
+				this.finish = coordsToUpdate.finish;
+				this.finish.gridId = coordsToUpdate.finish.row * this.cols + coordsToUpdate.finish.col;
 			}
 		},
 
@@ -524,146 +438,10 @@ export default {
 </script>
 
 <style lang="scss">
-@import "@/scss/variables.scss";
-
 .pathfinding-visualizer {
 	width: 100vw;
 	height: 100vh;
 	overflow: hidden;
-
-	.header {
-		position: absolute;
-		top: 0;
-		left: 0;
-		width: 100%;
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		transition: all 500ms ease-out;
-		z-index: 1;
-
-		&::before {
-			content: "";
-			position: absolute;
-			top: -100%;
-			left: 0;
-			height: 100%;
-			width: 100%;
-			box-shadow: 1px 10px 50px rgba(0, 0, 0, 1);
-			z-index: -1;
-		}
-
-		select {
-			height: 40px;
-			background: white;
-			color: rgb(0, 0, 0);
-			padding: 10px;
-			margin: 2px;
-			border-radius: 3px;
-			border: none;
-			width: fit-content;
-		}
-	}
-
-	.btn {
-		margin: 2px;
-		font-size: 0.7em;
-		font-weight: 600;
-		text-transform: uppercase;
-		.lg {
-			display: block;
-		}
-		.sm {
-			display: none;
-		}
-	}
-	.btn-setup {
-		top: 60px;
-		&.setup {
-			background: $success-low;
-			&:hover {
-				background: $success;
-			}
-		}
-	}
-	.btn-controls {
-		top: 115px;
-	}
-	.btn-camera {
-		top: 170px;
-	}
-	.btn-device-cam {
-		top: 225px;
-		&.active {
-			background: $success-low;
-			&:hover {
-				background: $success;
-			}
-		}
-	}
-	.fallback-icon {
-		display: none;
-	}
-
-	.maze-dropdown {
-		position: relative;
-
-		.dropdown {
-			position: absolute;
-			top: 100%;
-			left: 0;
-			width: 100%;
-			min-width: fit-content;
-			z-index: 2;
-
-			.dropdown-item {
-				padding: 10px;
-				font-size: 0.8em;
-				font-weight: 600;
-				color: white;
-				background: $secondary;
-				cursor: pointer;
-				&:hover {
-					filter: brightness(0.9);
-				}
-			}
-		}
-	}
-
-	@media (max-width: 792px) {
-		.btn {
-			.lg {
-				display: none;
-			}
-			.sm {
-				display: block;
-				font-size: 0.7em;
-			}
-			&.hover {
-				&:hover {
-					width: 55px;
-				}
-			}
-		}
-		.btn-camera {
-			top: 115px;
-		}
-		.btn-device-cam {
-			top: 170px;
-		}
-		.fallback-icon {
-			display: block;
-		}
-		.btn-controls {
-			display: none;
-		}
-		.header {
-			select {
-				padding: 2px;
-				font-size: 0.7em;
-			}
-		}
-	}
 
 	#video-canvas {
 		position: absolute;
@@ -688,22 +466,6 @@ export default {
 		bottom: 55px;
 		left: 3px;
 		width: 80px;
-	}
-
-	.slide-enter-active,
-	.slide-leave-active {
-		transition: all 500ms ease-in-out;
-	}
-	.slide-leave-active {
-		position: absolute;
-	}
-	.slide-enter,
-	.slide-leave-to {
-		opacity: 0;
-		transform: translateY(-50%);
-	}
-	.slide-move {
-		transition: all 500ms ease-in-out;
 	}
 }
 </style>

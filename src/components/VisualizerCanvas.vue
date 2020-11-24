@@ -81,7 +81,7 @@ export default {
 		moved: false,
 		currentEvent: null,
 		mouse: null,
-		intersectedNode: null,
+		prevNode: null,
 		clock: null,
 		stats: null,
 		// Device cam
@@ -312,7 +312,7 @@ export default {
 				this.animatePlayer(delta);
 			}
 			if (this.worldSetup) {
-				this.hoverObjectLoop();
+				this.holdAndDragLoop();
 				if(this.streaming) {
 					this.deviceCamLoop();
 				}
@@ -322,14 +322,16 @@ export default {
 			this.stats.update();
 		},
 
-		hoverObjectLoop() {
+		holdAndDragLoop() {
 			if (!this.down) {
-				this.intersectedNode = null;
+				this.prevNode = null;
 				return;
 			}
+
 			this.raycaster.setFromCamera(this.mouse, this.camera);
 			var intersects = this.raycaster.intersectObjects(this.clickableObjects);
 			if (intersects.length > 0) {
+				// Get coordinates of node
 				let coords;
 				if (intersects[0].object.name == "wall") {
 					coords = this.faceIndexToCoordinates(intersects[0].object.wallId * 2);
@@ -338,34 +340,36 @@ export default {
 					coords = this.faceIndexToCoordinates(faceIndex);
 				}
 
-				if (this.grid[coords.row][coords.col] != this.intersectedNode) {
+				// If current hovered is not the previous node
+				if (this.grid[coords.row][coords.col] != this.prevNode) {
 					let ends = ["start", "finish"];
-					if (
-						ends.includes(this.grid[coords.row][coords.col].status) ||
-						(this.intersectedNode && ends.includes(this.intersectedNode.status))
-					) {
-						let end;
-						if (ends.includes(this.grid[coords.row][coords.col].status)) {
-							end = this.grid[coords.row][coords.col].status;
+					const isEndNode = ends.includes(this.grid[coords.row][coords.col].status);
+					const isPrevEnd = this.prevNode && ends.includes(this.prevNode.status);
+
+					if (isEndNode || isPrevEnd) {
+						let endToUpdate;
+						if (isEndNode) {
+							endToUpdate = this.grid[coords.row][coords.col].status;
 						} else {
-							end = this.intersectedNode.status;
+							endToUpdate = this.prevNode.status;
 						}
-						let obj = {};
-						obj[end] = {
+						let coordsToUpdate = {};
+						coordsToUpdate[endToUpdate] = {
 							row: coords.row,
 							col: coords.col,
-						};
-						if (this.intersectedNode && ends.includes(this.intersectedNode.status)) {
-							this.intersectedNode.status = "default";
 						}
-						this.grid[coords.row][coords.col].status = end;
-						this.$emit("updateEnds", obj);
-					} else if (this.selectedAlgorithm.type != 'unweighted' && (!this.intersectedNode || !ends.includes(this.intersectedNode.status))) {
+						if (isPrevEnd) {
+							this.prevNode.status = "default";
+						}
+						this.grid[coords.row][coords.col].status = endToUpdate;
+						this.$emit("updateEnds", coordsToUpdate);
+					// Else if prev is not an end and algorithm is not unweighted
+					} else if (!isPrevEnd && this.selectedAlgorithm.type != 'unweighted') {
 						this.grid[coords.row][coords.col].status =
 							this.grid[coords.row][coords.col].status == "wall" ? "default" : "wall";
 					}
 
-					this.intersectedNode = this.grid[coords.row][coords.col];
+					this.prevNode = this.grid[coords.row][coords.col];
 				}
 			}
 		},
@@ -428,7 +432,7 @@ export default {
 				rotationMatrix.makeRotationY(this.degreesToRadians(270));
 			}
 
-			// Player is not moving forward, apply rotation matrix needed
+			// Player is not moving forward, apply the needed rotation matrix
 			if (rotationMatrix !== undefined) {
 				cameraDirection.applyMatrix4(rotationMatrix);
 			}
