@@ -1,5 +1,6 @@
 <template>
 	<div id="visualizer" @click="controlType == 'PointerLock' ? controls.lock() : null">
+		<div class="pointer-lock-splash" v-if="showPointerLockSplashScreen"> <span>Click to start</span> </div>
 		<script type="x-shader/x-vertex" id="vertexShader">
 			varying vec3 vWorldPosition;
 
@@ -33,6 +34,7 @@ import TWEEN, { removeAll } from "@tweenjs/tween.js";
 import Stats from "three/examples/jsm/libs/stats.module.js";
 
 import { getAllNodes } from "./algorithms/helpers.js";
+import { calcDist, degreesToRadians } from "./Utils/General.js";
 import Node from "./Utils/GridNode.js";
 
 export default {
@@ -88,6 +90,12 @@ export default {
 		videoCanvas: null,
 		video: null
 	}),
+
+	computed: {
+		showPointerLockSplashScreen() {
+			return this.controlType == "PointerLock" && !this.pointerLockControls.isLocked;
+		}
+	},
 
 	watch: {
 		controlType: function(newVal, oldVal) {
@@ -223,8 +231,8 @@ export default {
 			this.scene.add(fakeGround);
 
 			//Grid helper
-			var size = this.cols * this.nodeDimensions.height;
-			var divisions = this.cols;
+			var size = Math.max(this.cols, this.rows) * this.nodeDimensions.height;
+			var divisions = Math.max(this.cols, this.rows);
 			var gridHelper = new THREE.GridHelper(size, divisions, 0x5c78bd, 0x5c78bd);
 			gridHelper.position.y = 0.035;
 			this.scene.add(gridHelper);
@@ -632,23 +640,26 @@ export default {
 		computeInteractableObjects(node) {
 			let index;
 			const wall = this.scene.getObjectById(node.wallMeshId);
-			if(node.status == "wall") {
-				index = this.clickableObjects.indexOf(wall);
-				if(index == -1) {
-					this.clickableObjects.push(wall);
-				}
-				index = this.collidableObjects.indexOf(wall);
-				if(index == -1) {
-					this.collidableObjects.push(wall);
-				}
-			} else {
-				index = this.clickableObjects.indexOf(wall);
-				if(index != -1) {
-					this.clickableObjects.splice(index, 1);
-				}
-				index = this.collidableObjects.indexOf(wall);
-				if(index != -1) {
-					this.collidableObjects.splice(index, 1);
+			// console.log(node, wall);
+			if(wall) {
+				if(node.status == "wall") {
+					index = this.clickableObjects.indexOf(wall);
+					if(index == -1) {
+						this.clickableObjects.push(wall);
+					}
+					index = this.collidableObjects.indexOf(wall);
+					if(index == -1) {
+						this.collidableObjects.push(wall);
+					}
+				} else {
+					index = this.clickableObjects.indexOf(wall);
+					if(index != -1) {
+						this.clickableObjects.splice(index, 1);
+					}
+					index = this.collidableObjects.indexOf(wall);
+					if(index != -1) {
+						this.collidableObjects.splice(index, 1);
+					}
 				}
 			}
 		},
@@ -693,10 +704,6 @@ export default {
 			this.down = false;
 		},
 
-		calcDist(x, y) {
-			return x * x + y * y;
-		},
-
 		setMouseVector(event, type) {
 			let touchEvent = type == "click" ? this.currentEvent : event;
 			if (touchEvent.touches && touchEvent.touches.length > 0) {
@@ -728,10 +735,6 @@ export default {
 				}
 				this.$emit("clickEvent", this.grid[coords.row][coords.col]);
 			}
-		},
-
-		degreesToRadians(degrees) {
-			return degrees * Math.PI/180;
 		},
 
 		faceIndexToCoordinates(faceIndex) {
@@ -817,5 +820,23 @@ export default {
 #visualizer {
 	height: 100vh;
 	width: 100vw;
+
+	.pointer-lock-splash {
+		position: absolute;
+		width: 100vw;
+		height: 100vh;
+		background: rgba(black, 0.4);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+
+		span {
+			font-size: 2em;
+			text-transform: uppercase;
+			font-weight: 600;
+			color: white;
+			text-shadow: 2px 2px 5px rgba(black, 0.3);
+		}
+	}
 }
 </style>
