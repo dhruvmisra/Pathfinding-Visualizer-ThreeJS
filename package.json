@@ -10,7 +10,7 @@
     "@tweenjs/tween.js": "^18.6.0",
     "core-js": "^3.6.5",
     "register-service-worker": "^1.7.1",
-    "three": "^0.119.1",
+    "three": "^0.125.0",
     "vue": "^2.6.11"
   },
   "devDependencies": {
